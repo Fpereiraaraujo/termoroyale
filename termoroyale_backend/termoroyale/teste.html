@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste Termo Royale</title>
+    <!-- Importando as bibliotecas do SockJS e STOMP -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #2b2b2b; color: white; }
+        button { padding: 10px 20px; margin: 10px 0; cursor: pointer; font-size: 16px; }
+        #status { color: #4CAF50; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h1>Teste de Conexão: Termo Royale</h1>
+
+<button onclick="conectar()">1. Conectar ao Servidor WebSocket</button><br>
+<button onclick="entrarNaFila()">2. Simular Jogador Entrando (Join)</button>
+
+<p>Status: <span id="status">Desconectado</span></p>
+
+<script>
+    var stompClient = null;
+
+    function conectar() {
+        // Aponta para o endpoint que configuramos no WebSocketConfig
+        var socket = new SockJS('http://localhost:8080/termo-websocket');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function (frame) {
+            document.getElementById('status').innerText = 'CONECTADO! (Veja a aba Network do navegador)';
+        });
+    }
+
+    function entrarNaFila() {
+        if(stompClient !== null) {
+            // Envia a mensagem para a rota @MessageMapping("/join")
+            stompClient.send("/app/join", {}, JSON.stringify({'playerName': 'Fernando_Dev'}));
+            document.getElementById('status').innerText = 'Mensagem Enviada! Olhe o console do IntelliJ/Eclipse.';
+        } else {
+            alert("Conecte primeiro!");
+        }
+    }
+</script>
+</body>
+</html>

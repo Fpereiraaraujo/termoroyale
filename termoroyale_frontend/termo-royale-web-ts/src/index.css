@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+/* Definindo a fonte global do jogo */
+body {
+  font-family: 'Fredoka', sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Impede a tela de rolar, igual num jogo de verdade */
+  background-color: #a1d6e2; /* Cor de fallback (um azul céu) */
+}
+
+/* Utilitários personalizados para as cores exatas do Termo */
+@theme {
+  --color-termo-green: #6aaa64;
+  --color-termo-yellow: #c9b458;
+  --color-termo-gray: #787c7e;
+  --color-termo-key: #d3d6da;
+}
