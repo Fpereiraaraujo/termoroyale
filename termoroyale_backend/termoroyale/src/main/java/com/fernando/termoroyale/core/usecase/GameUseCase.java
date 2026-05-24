@@ -1,90 +1,71 @@
 package com.fernando.termoroyale.core.usecase;
 
-import com.fernando.termoroyale.core.domain.GuessResponse;
-import com.fernando.termoroyale.core.domain.LetterStatus;
-import com.fernando.termoroyale.core.domain.Player;
-import com.fernando.termoroyale.core.domain.Room;
-import com.fernando.termoroyale.core.port.RoomRepositoryPort;
-import com.fernando.termoroyale.core.port.DictionaryPort;
+import com.fernando.termoroyale.core.domain.*;
+import com.fernando.termoroyale.core.port.*;
 import com.fernando.termoroyale.core.exception.InvalidWordException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class GameUseCase {
-
     private final RoomRepositoryPort roomRepository;
     private final TermoValidator validator;
     private final DictionaryPort dictionaryPort;
 
     public GuessResponse processGuess(String roomId, String playerName, String word) {
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Sala não encontrada"));
+        Room room = roomRepository.findById(roomId).orElseThrow();
+        if (!dictionaryPort.isValidWord(word)) throw new InvalidWordException("Palavra inválida!");
 
-        if (room.isFinished()) throw new RuntimeException("A partida já terminou!");
-
-        if (!dictionaryPort.isValidWord(word)) {
-            throw new InvalidWordException("Palavra '" + word + "' inválida!");
-        }
-
-        // 1. Calcula o resultado para TODAS as palavras alvo da rodada
         List<List<String>> allResults = new ArrayList<>();
-        boolean allWon = true;
+        boolean allGridsWon = true;
 
         for (String target : room.getTargetWords()) {
             LetterStatus[] statuses = validator.validate(word, target);
-            // Verifica se a palavra atual foi acertada
-            boolean wordWon = Arrays.stream(statuses).allMatch(s -> s == LetterStatus.CORRECT);
-            if (!wordWon) allWon = false;
-
+            boolean gridWon = Arrays.stream(statuses).allMatch(s -> s == LetterStatus.CORRECT);
+            if (!gridWon) allGridsWon = false;
             allResults.add(Arrays.stream(statuses).map(Enum::name).toList());
         }
 
-        // 2. Atualiza o jogador com a lista de todos os resultados
-        room.updatePlayerProgress(playerName, word, allWon, allResults);
-
-        // 3. Verifica progressão
+        room.updatePlayerProgress(playerName, word, allGridsWon, allResults);
         checkRoundProgression(room);
-
         roomRepository.save(room);
 
-        // Retorna o resultado (usamos o primeiro como base para o feedback principal do board)
-        return new GuessResponse(word, null, allWon, room.getRemainingAttempts(playerName));
+        return new GuessResponse(word, null, allGridsWon, room.getRemainingAttempts(playerName));
     }
 
     private void checkRoundProgression(Room room) {
+        List<Player> players = room.getPlayers();
+        long finishedCount = players.stream().filter(p -> p.isWon() || !p.isAlive()).count();
 
-        if (!"PLAYING".equals(room.getStatus())) return;
-
-
-        long finishedCount = room.getPlayers().stream()
-                .filter(p -> p.isWon() || !p.isAlive())
-                .count();
-
-
-        if (finishedCount == room.getPlayers().size()) {
-            List<Player> survivors = room.getPlayers().stream()
+        if (finishedCount >= players.size()) {
+            List<Player> winners = players.stream()
                     .filter(Player::isWon)
+                    .sorted(Comparator.comparingInt(p -> p.getGuesses().size()))
                     .toList();
 
-            if (survivors.isEmpty()) {
+            if (winners.isEmpty()) {
                 room.setStatus("FINISHED");
                 room.setFinished(true);
-                return;
-            }
-
-            if (room.getCurrentRound() == 1) {
-                advanceToRound(room, 2, 2);
-            } else if (room.getCurrentRound() == 2) {
-                advanceToRound(room, 3, 4);
             } else {
-                room.setStatus("FINISHED");
-                room.setFinished(true);
+                int total = players.size();
+                int cut = (room.getCurrentRound() == 1) ? (total * 2 / 3) : (total / 3);
+                final int finalCut = Math.max(1, cut);
+
+                players.forEach(p -> {
+                    if (!winners.contains(p) || winners.indexOf(p) >= finalCut) {
+                        p.setAlive(false);
+                        p.setWon(false);
+                    } else {
+                        p.setWon(false); // Reset para próxima rodada
+                        p.setCurrentAttempts(0);
+                        p.setGuesses(new ArrayList<>());
+                        p.setResults(new ArrayList<>());
+                    }
+                });
+                advanceToRound(room, room.getCurrentRound() + 1, room.getCurrentRound() == 1 ? 2 : 4);
             }
         }
     }
@@ -92,8 +73,6 @@ public class GameUseCase {
     private void advanceToRound(Room room, int nextRound, int wordCount) {
         room.setRound(nextRound);
         room.getTargetWords().clear();
-        for (int i = 0; i < wordCount; i++) {
-            room.getTargetWords().add(dictionaryPort.getRandomTargetWord());
-        }
+        for (int i = 0; i < wordCount; i++) room.getTargetWords().add(dictionaryPort.getRandomTargetWord());
     }
 }

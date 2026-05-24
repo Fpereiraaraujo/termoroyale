@@ -1,4 +1,4 @@
-export type LetterStatus = 'CORRECT' | 'PRESENT' | 'ABSENT' | 'EMPTY';
+export type LetterStatus = 'CORRECT' | 'PRESENT' | 'ABSENT' | 'EMPTY' | 'INITIAL';
 
 export interface Player {
     id: string;
@@ -7,7 +7,7 @@ export interface Player {
     currentAttempts: number;
     won: boolean;
     guesses: string[];
-    results: LetterStatus[][];
+    results: LetterStatus[][][];
 }
 
 export interface Room {

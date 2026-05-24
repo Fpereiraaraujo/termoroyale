@@ -25,7 +25,7 @@ export default function App() {
   }, [room, meuNome]);
 
   const myGuesses = myPlayer?.guesses || [];
-  const myResults = myPlayer?.results || [];
+  const myResults = (myPlayer?.results as LetterStatus[][][]) || [];
 
   const keyStatuses = useMemo(() => {
     const statuses: Record<string, LetterStatus> = {};
@@ -34,6 +34,7 @@ export default function App() {
       const gridsResults = myResults[wordIndex];
       if (!gridsResults) return;
       const firstGridResult = gridsResults[0];
+      if (!firstGridResult) return;
       word.split("").forEach((letter, letterIndex) => {
         const currentStatus = firstGridResult[letterIndex] as LetterStatus;
         if (statuses[letter] === "CORRECT") return;
@@ -64,8 +65,6 @@ export default function App() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // --- RENDERIZAÇÃO ESTÁVEL ---
-
   if (!meuNome) return <Home onJoin={(n) => { setMeuNome(n); setInLobby(true); }} />;
 
   if (inLobby) return (
@@ -82,7 +81,6 @@ export default function App() {
       </div>
   );
 
-  // MANTIDO: Layout da Sala de Espera intacto e protegido contra mudanças
   if (room.status === "WAITING") return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-sky-200 bg-cover bg-center p-4"
            style={{ backgroundImage: "url('/bg-stadium.jpg')" }}>
@@ -112,7 +110,8 @@ export default function App() {
       </div>
   );
 
-  // Apenas se o status for PLAYING ou FINISHED, o jogo entra na Arena
+  if (!myPlayer) return <div className="h-screen flex items-center justify-center bg-slate-900 text-white">SINCRONIZANDO...</div>;
+
   return (
       <GameArena
           room={room}

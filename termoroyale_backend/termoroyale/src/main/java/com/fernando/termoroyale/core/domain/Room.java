@@ -19,12 +19,12 @@ public class Room {
     private boolean finished = false;
     private List<String> targetWords = new ArrayList<>();
     private String status = "WAITING";
-    private int timeLeft = 180;
+    private int timeLeft = 30;
 
 
     public Room() {
         this.id = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        this.timeLeft = 180;
+        this.timeLeft = 30;
         this.status = "WAITING";
         this.players = new ArrayList<>();
         this.maxAttempts = 6;

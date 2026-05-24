@@ -115,7 +115,7 @@ public class MatchmakingUseCase {
         }
 
         newRoom.setStatus("WAITING");
-        newRoom.setTimeLeft(180);
+        newRoom.setTimeLeft(30);
 
         newRoom.getTargetWords().add(dictionaryPort.getRandomTargetWord());
 

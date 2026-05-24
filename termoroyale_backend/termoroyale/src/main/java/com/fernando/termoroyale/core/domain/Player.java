@@ -1,5 +1,6 @@
 package com.fernando.termoroyale.core.domain;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,6 +14,7 @@ public class Player {
 
     // Forçamos o valor padrão e garantimos que o Jackson enxergue
     @JsonProperty("isAlive")
+    @JsonAlias({"alive"})
     private boolean isAlive = true;
     private int currentAttempts = 0;
     private boolean won = false;
