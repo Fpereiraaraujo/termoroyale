@@ -106,12 +106,12 @@ public class GameUseCase {
                             Room r = roomRepository.findById(room.getId()).orElse(null);
                             if (r == null) return;
                             List<Player> ps = r.getPlayers();
-                            int totalPlayers = r.getInitialPlayersCount() > 0 ? r.getInitialPlayersCount() : ps.size();
+                            int totalPlayersInner = r.getInitialPlayersCount() > 0 ? r.getInitialPlayersCount() : ps.size();
                             int q;
                             if (r.getCurrentRound() == 1) {
-                                q = Math.max(1, (int) Math.round(totalPlayers * 0.66));
+                                q = Math.max(1, (int) Math.round(totalPlayersInner * 0.66));
                             } else if (r.getCurrentRound() == 2) {
-                                q = Math.max(1, (int) Math.round(totalPlayers * 0.33));
+                                q = Math.max(1, (int) Math.round(totalPlayersInner * 0.33));
                             } else {
                                 q = 1;
                             }
