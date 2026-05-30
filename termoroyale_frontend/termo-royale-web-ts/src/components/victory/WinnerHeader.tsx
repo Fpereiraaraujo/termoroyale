@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useI18n } from "../../i18n";
 
 interface WinnerHeaderProps {
     winnerName: string | undefined;
@@ -9,6 +10,7 @@ interface WinnerHeaderProps {
 const ICONS = ["🎉", "🏆", "👑", "🐐", "✨"];
 
 export function WinnerHeader({ winnerName, euVenci, hasWinner }: WinnerHeaderProps) {
+    const { t } = useI18n();
     const icons = useMemo(() => ICONS, []);
     const [floatIcon, setFloatIcon] = useState(0);
     useEffect(() => {
@@ -25,28 +27,28 @@ export function WinnerHeader({ winnerName, euVenci, hasWinner }: WinnerHeaderPro
             </div>
 
             {/* Coroa + Cabra */}
-            <div className="flex items-end gap-4 mt-4">
-                <span className="text-7xl crown-float drop-shadow-lg">👑</span>
-                <span className="text-8xl goat-bounce drop-shadow-lg">🐐</span>
-                <span className="text-7xl crown-float drop-shadow-lg" style={{ animationDelay: "0.4s" }}>👑</span>
+            <div className="flex items-end gap-3 mt-2">
+                <span className="text-5xl crown-float drop-shadow-lg">👑</span>
+                <span className="text-6xl goat-bounce drop-shadow-lg">🐐</span>
+                <span className="text-5xl crown-float drop-shadow-lg" style={{ animationDelay: "0.4s" }}>👑</span>
             </div>
 
-            <span className="mt-4 bg-yellow-400 text-slate-900 font-black px-4 py-1.5 rounded-full text-xs uppercase tracking-[0.3em] shadow-inner">
-                GOAT da Arena {icons[floatIcon]}
+            <span className="mt-3 bg-yellow-400 text-slate-900 font-black px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.3em] shadow-inner">
+                {t("victory.arenaGoat")} {icons[floatIcon]}
             </span>
 
-            <h1 className="mt-3 text-6xl md:text-7xl font-black uppercase tracking-wider text-yellow-400 gold-pulse text-center wrap-break-word max-w-full">
-                {winnerName ?? "Sem Vencedor"}
+            <h1 className="mt-2 text-4xl md:text-5xl font-black uppercase tracking-wider text-yellow-400 gold-pulse text-center wrap-break-word max-w-full">
+                {winnerName ?? t("victory.noWinner")}
             </h1>
 
             {euVenci && (
-                <p className="mt-2 text-2xl font-black uppercase tracking-widest text-green-400">
-                    VOCÊ É O CAMPEÃO!
+                <p className="mt-1 text-lg font-black uppercase tracking-widest text-green-400">
+                    {t("victory.youAreChampion")}
                 </p>
             )}
             {!euVenci && hasWinner && (
-                <p className="mt-2 text-base font-bold uppercase tracking-widest text-slate-500">
-                    Parabéns ao campeão da arena
+                <p className="mt-1 text-sm font-bold uppercase tracking-widest text-slate-400">
+                    {t("victory.congrats")}
                 </p>
             )}
         </>

@@ -11,6 +11,7 @@ import { ActionButtons } from "./victory/ActionButtons";
 import { useVictoryData } from "./victory/useVictoryData";
 import { playVictorySound } from "./victory/sound";
 import { loadHallOfFame, pushHallOfFame, type HallEntry } from "./victory/hallOfFameStorage";
+import { useI18n } from "../i18n";
 
 interface VictoryScreenProps {
     room: Room;
@@ -22,6 +23,7 @@ interface VictoryScreenProps {
 export function VictoryScreen({ room, meuNome, onBackToLobby, onRematch }: VictoryScreenProps) {
     const { winner, podium, winnerStats, phasesPlayed } = useVictoryData(room);
     const euVenci = winner?.name.toLowerCase() === meuNome.toLowerCase();
+    const { t } = useI18n();
 
     // Som — uma vez
     const soundPlayedRef = useRef(false);
@@ -48,18 +50,18 @@ export function VictoryScreen({ room, meuNome, onBackToLobby, onRematch }: Victo
     }, [winner, winnerStats, room.id, room.name]);
 
     const shareUrl = `${window.location.origin}/room/${room.id}`;
-    const shareText = `🐐 ${winner?.name ?? "Alguém"} é o GOAT do TERMO ROYALE! Jogue em ${shareUrl}`;
+    const shareText = t("victory.shareText", { name: winner?.name ?? t("victory.shareTextFallback"), url: shareUrl });
 
     return (
         <>
             <VictoryAnimations />
             <div
-                className="relative h-screen w-screen overflow-y-auto bg-sky-200 bg-cover bg-center flex items-start justify-center p-4 py-10"
+                className="relative h-screen w-screen overflow-y-auto bg-sky-200 bg-cover bg-center flex items-start justify-center p-3 py-4"
                 style={{ backgroundImage: "url('/bg-stadium.jpg')" }}
             >
                 <Confetti />
 
-                <div className="relative w-full max-w-3xl bg-white rounded-[2.5rem] border-4 border-yellow-400 shadow-[0_0_60px_rgba(250,204,21,0.35)] p-8 md:p-12 flex flex-col items-center text-slate-800">
+                <div className="relative w-full max-w-2xl bg-slate-900 rounded-3xl border-4 border-yellow-400 shadow-[0_0_60px_rgba(250,204,21,0.35)] p-5 md:p-6 flex flex-col items-center text-slate-200">
                     <WinnerHeader
                         winnerName={winner?.name}
                         euVenci={euVenci}
@@ -77,8 +79,8 @@ export function VictoryScreen({ room, meuNome, onBackToLobby, onRematch }: Victo
                         onBackToLobby={onBackToLobby}
                     />
 
-                    <p className="mt-6 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                        Sala #{room.id} · {room.players.length} competidores
+                    <p className="mt-4 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                        {t("victory.footer", { id: room.id, count: room.players.length })}
                     </p>
                 </div>
             </div>

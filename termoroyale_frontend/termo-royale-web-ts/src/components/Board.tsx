@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Tile, type TileSize } from "./Tile.tsx";
 import type { LetterStatus } from "../types/game";
 
@@ -9,6 +10,7 @@ interface BoardProps {
     targetWords: string[];
     activeCol: number;
     onTileClick: (col: number) => void;
+    errorTimestamp?: number;
 }
 
 export function Board({
@@ -18,16 +20,24 @@ export function Board({
     title,
     targetWords,
     activeCol,
-    onTileClick
+    onTileClick,
+    errorTimestamp = 0,
 }: BoardProps) {
 
     const rows = Array(6).fill(null);
     const gridCount = targetWords.length;
-    // Termo (1) = grande, Duo (2) = médio, Quarteto (3-4+) = pequeno
     const tileSize: TileSize = gridCount >= 3 ? "sm" : gridCount === 2 ? "md" : "lg";
     const outerGap = gridCount >= 3 ? "gap-2" : "gap-3";
     const innerPad = gridCount >= 3 ? "p-1.5" : "p-2";
     const rowGap = gridCount >= 3 ? "gap-0.5 mb-0.5" : "gap-1 mb-1";
+
+    const [shake, setShake] = useState(false);
+    useEffect(() => {
+        if (!errorTimestamp) return;
+        setShake(true);
+        const t = setTimeout(() => setShake(false), 500);
+        return () => clearTimeout(t);
+    }, [errorTimestamp]);
 
     return (
         <div className="flex flex-col items-center gap-2 p-3 bg-slate-100/90 backdrop-blur-md rounded-2xl shadow-xl border border-white">
@@ -91,7 +101,11 @@ export function Board({
                                 return (
                                     <div
                                         key={rowIndex}
-                                        className={`flex ${rowGap}`}
+                                        className={`flex ${rowGap} ${isCurrentRow && shake ? "animate-shake" : ""} ${
+                                            isPastRow && rowIndex === guesses.length - 1 &&
+                                            results[rowIndex]?.[gridIndex]?.every(s => s === "CORRECT")
+                                                ? "animate-bounce-row" : ""
+                                        }`}
                                     >
                                         {Array(5)
                                             .fill(null)

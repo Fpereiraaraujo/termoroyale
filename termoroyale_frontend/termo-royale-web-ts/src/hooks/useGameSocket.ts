@@ -35,6 +35,8 @@ export function useGameSocket(
     const [room, setRoom] = useState<Room | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [reactions, setReactions] = useState<ReactionEvent[]>([]);
+    const [lastErrorAt, setLastErrorAt] = useState<number>(0);
+    const [lastErrorMessage, setLastErrorMessage] = useState<string>("");
     const stompClient = useRef<Client | null>(null);
     const subscribedRoomId = useRef<string | null>(null);
 
@@ -48,6 +50,14 @@ export function useGameSocket(
             reconnectDelay: 3000,
             onConnect: () => {
                 setIsConnected(true);
+
+                client.subscribe('/user/queue/errors', (errMsg) => {
+                    try {
+                        const data = JSON.parse(errMsg.body);
+                        setLastErrorMessage(data?.message ?? "Erro");
+                    } catch { setLastErrorMessage("Erro"); }
+                    setLastErrorAt(Date.now());
+                });
 
                 client.subscribe('/user/queue/room', (message) => {
                     const initialRoom: Room = JSON.parse(message.body);
@@ -147,5 +157,5 @@ export function useGameSocket(
         setReactions(prev => prev.filter(r => r.id !== id));
     };
 
-    return { room, isConnected, sendGuess, requestRematch, reactions, sendReaction, expireReaction };
+    return { room, isConnected, sendGuess, requestRematch, reactions, sendReaction, expireReaction, lastErrorAt, lastErrorMessage };
 }

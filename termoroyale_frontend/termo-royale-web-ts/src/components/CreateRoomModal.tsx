@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../i18n";
 
 interface CreateRoomModalProps {
     isOpen: boolean;
@@ -10,6 +11,7 @@ export function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoomModalPr
     const [roomName, setRoomName] = useState("");
     const [maxPlayers, setMaxPlayers] = useState(20);
     const [isPrivate, setIsPrivate] = useState(false);
+    const { t } = useI18n();
 
     if (!isOpen) return null;
 
@@ -18,7 +20,7 @@ export function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoomModalPr
             <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border-t-2 sm:border-2 border-white max-h-[90vh] flex flex-col">
 
                 <div className="bg-slate-800 p-5 sm:p-6 text-center relative shrink-0">
-                    <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-widest">Criar Sala</h3>
+                    <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-widest">{t("create.title")}</h3>
                     <button
                         onClick={onClose}
                         className="absolute top-5 sm:top-6 right-5 sm:right-6 text-slate-400 hover:text-white font-black transition-colors p-1"
@@ -29,19 +31,19 @@ export function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoomModalPr
 
                 <div className="p-6 sm:p-8 flex flex-col gap-5 sm:gap-6 overflow-y-auto">
                     <div className="flex flex-col gap-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Nome da Sala</label>
+                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("create.name")}</label>
                         <input
                             type="text"
                             autoFocus
                             value={roomName}
-                            placeholder="Ex: Torneio do Fernando"
+                            placeholder={t("create.namePlaceholder")}
                             className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-sky-500 focus:bg-white transition-all text-sm sm:text-base placeholder:font-normal placeholder:text-slate-400"
                             onChange={(e) => setRoomName(e.target.value)}
                         />
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Quantidade de Jogadores</label>
+                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("create.players")}</label>
                         <div className="flex items-center gap-4">
                             <input
                                 type="range"
@@ -58,32 +60,32 @@ export function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoomModalPr
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Visibilidade</label>
+                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("create.visibility")}</label>
                         <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
                             <button
                                 onClick={() => setIsPrivate(false)}
                                 className={`flex-1 py-2.5 sm:py-3 rounded-lg font-black text-xs sm:text-sm uppercase tracking-wider transition-all ${!isPrivate ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                             >
-                                Público
+                                {t("create.public")}
                             </button>
                             <button
                                 onClick={() => setIsPrivate(true)}
                                 className={`flex-1 py-2.5 sm:py-3 rounded-lg font-black text-xs sm:text-sm uppercase tracking-wider transition-all ${isPrivate ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                             >
-                                Privado
+                                {t("create.private")}
                             </button>
                         </div>
                     </div>
 
                     <button
                         onClick={() => {
-                            const finalName = roomName.trim() || `Arena Royale #${Math.floor(Math.random() * 1000)}`;
+                            const finalName = roomName.trim() || `${t("create.defaultName")} #${Math.floor(Math.random() * 1000)}`;
                             onCreate(finalName, maxPlayers, isPrivate);
                             onClose();
                         }}
                         className="w-full bg-green-500 hover:bg-green-400 text-white font-black px-6 py-3.5 sm:py-4 rounded-xl uppercase tracking-widest transition-all hover:shadow-lg active:scale-95 text-sm sm:text-base mt-2 shrink-0 shadow-md"
                     >
-                        Confirmar Partida
+                        {t("create.confirm")}
                     </button>
                 </div>
             </div>

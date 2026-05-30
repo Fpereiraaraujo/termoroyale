@@ -1,4 +1,5 @@
 import type { Player, LetterStatus } from "../types/game";
+import { useI18n } from "../i18n";
 
 interface SpectatorBoardsProps {
     players: Player[];
@@ -57,6 +58,7 @@ function SpectatorPlayerCard({
     targetWords: string[];
     maxAttempts: number;
 }) {
+    const { t } = useI18n();
     const lastGuess = player.guesses[player.guesses.length - 1];
     const lastResults = player.results[player.results.length - 1];
 
@@ -107,7 +109,7 @@ function SpectatorPlayerCard({
 
             {player.won && (
                 <span className="text-[10px] font-black uppercase tracking-widest text-green-600 text-center">
-                    🏆 Resolveu
+                    🏆 {t("spectator.solved")}
                 </span>
             )}
         </div>
@@ -120,6 +122,7 @@ export function SpectatorBoards({
                                     targetWords,
                                     maxAttempts,
                                 }: SpectatorBoardsProps) {
+    const { t } = useI18n();
     const others = players.filter(
         p => p.name.toLowerCase() !== meuNome.toLowerCase() && (p.isAlive || p.won)
     );
@@ -129,9 +132,9 @@ export function SpectatorBoards({
             <div className="flex flex-col items-center justify-center p-12 bg-white rounded-4xl border-2 border-slate-200 shadow-xl text-slate-700">
                 <div className="text-7xl mb-4">👻</div>
                 <h2 className="text-3xl font-black uppercase tracking-widest text-slate-700">
-                    Eliminado
+                    {t("spectator.eliminatedTitle")}
                 </h2>
-                <p className="text-slate-500 mt-2 font-bold text-base">Aguardando próxima sala.</p>
+                <p className="text-slate-500 mt-2 font-bold text-base">{t("spectator.waitingNext")}</p>
             </div>
         );
     }
@@ -143,15 +146,15 @@ export function SpectatorBoards({
                     <span className="text-4xl">👻</span>
                     <div>
                         <h2 className="text-2xl font-black uppercase tracking-widest text-slate-800">
-                            Modo Espectador
+                            {t("spectator.modeTitle")}
                         </h2>
                         <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
-                            Você foi eliminado — acompanhe quem ainda está na disputa
+                            {t("spectator.modeSubtitle")}
                         </p>
                     </div>
                 </div>
                 <span className="bg-slate-900 text-yellow-400 font-black px-3 py-1.5 rounded-full text-xs uppercase tracking-widest border border-slate-900">
-                    {others.length} {others.length === 1 ? "vivo" : "vivos"}
+                    {others.length} {others.length === 1 ? t("spectator.aliveOne") : t("spectator.aliveMany")}
                 </span>
             </div>
 

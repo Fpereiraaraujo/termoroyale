@@ -9,6 +9,7 @@ import { FloatingLetters } from "./FloatingLetters.tsx";
 import { useEffect } from "react";
 import type { Room, LetterStatus } from "../types/game";
 import type { ReactionEvent } from "../hooks/useGameSocket";
+import { useI18n } from "../i18n";
 
 interface GameArenaProps {
     room: Room;
@@ -25,6 +26,7 @@ interface GameArenaProps {
     reactions: ReactionEvent[];
     sendReaction: (emoji: string) => void;
     expireReaction: (id: number) => void;
+    errorTimestamp?: number;
 }
 
 export function GameArena({
@@ -42,7 +44,9 @@ export function GameArena({
                               reactions,
                               sendReaction,
                               expireReaction,
+                              errorTimestamp,
                           }: GameArenaProps) {
+    const { t } = useI18n();
 
     useEffect(() => {
         const handleKeyDownEvent = (event: KeyboardEvent) => {
@@ -84,18 +88,17 @@ export function GameArena({
                     lives={myPlayer?.isAlive ? room.maxAttempts - (myPlayer?.currentAttempts || 0) : 0}
                     maxLives={room.maxAttempts}
                     timeRemaining={formatTime(room.timeLeft)}
+                    secondsLeft={room.timeLeft}
                     currentRound={room.currentRound}
                     status={room.status}
-                    alivePlayers={room.players.filter((p: any) => p.isAlive).length}
-                    totalPlayers={room.players.length}
                 />
 
                 <div className="flex-1 flex flex-col items-center justify-center p-2 relative min-h-0">
                     {/* Mensagem de Espera (Aparece quando won é true) */}
                     {myPlayer?.won && (
                         <div className="absolute top-10 z-50 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-2xl font-black uppercase shadow-2xl border-4 border-white animate-bounce text-center">
-                            <h3 className="text-2xl">Você Acertou!</h3>
-                            <p className="text-sm opacity-90">Aguardando a cota de classificados...</p>
+                            <h3 className="text-2xl">{t("game.youGotIt")}</h3>
+                            <p className="text-sm opacity-90">{t("game.waitingQuota")}</p>
                         </div>
                     )}
 
@@ -116,6 +119,7 @@ export function GameArena({
                                 targetWords={room.targetWords}
                                 activeCol={activeCol}
                                 onTileClick={setActiveCol}
+                                errorTimestamp={errorTimestamp}
                             />
                         </div>
                     )}

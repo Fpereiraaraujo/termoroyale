@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { avatarFor } from "../utils/avatar";
+import { useI18n } from "../i18n";
 
 interface RankingProps {
     players: any[];
@@ -9,6 +10,7 @@ interface RankingProps {
 }
 
 export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed }: RankingProps) {
+    const { t } = useI18n();
 
     const sortedPlayers = useMemo(() => {
         return [...players].sort((a, b) => {
@@ -75,7 +77,7 @@ export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed
             <div className="p-6 border-b border-white/10 bg-slate-800/50">
                 <h3 className="text-2xl font-black tracking-widest uppercase flex items-center gap-3">
                     <span className="w-2 h-8 bg-sky-500 rounded-full"></span>
-                    Ranking
+                    {t("ranking.title")}
                 </h3>
             </div>
 
@@ -116,7 +118,7 @@ export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed
                                         {player.name}
                                     </span>
                                     <div className="flex items-center gap-1.5">
-                                        {isMe && <span className="text-[10px] text-sky-400 font-black tracking-widest uppercase">Você</span>}
+                                        {isMe && <span className="text-[10px] text-sky-400 font-black tracking-widest uppercase">{t("ranking.you")}</span>}
                                         {liveSeconds !== undefined && (
                                             <span className={`text-[10px] font-black tracking-widest uppercase ${
                                                 player.won ? 'text-green-400' : 'text-slate-400'
@@ -131,13 +133,13 @@ export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed
                             <div>
                                 {player.won ? (
                                     <span className="bg-green-500/20 text-green-400 font-black px-3 py-1 rounded-lg text-xs uppercase tracking-widest border border-green-500/30">
-                                        {solveTime ? `${solveTime}s` : "Venceu"}
+                                        {solveTime ? `${solveTime}s` : t("ranking.won")}
                                     </span>
                                 ) : !player.isAlive ? (
-                                    <span className="bg-red-500/20 text-red-400 font-black px-3 py-1 rounded-lg text-xs uppercase tracking-widest border border-red-500/30">Fora</span>
+                                    <span className="bg-red-500/20 text-red-400 font-black px-3 py-1 rounded-lg text-xs uppercase tracking-widest border border-red-500/30">{t("ranking.out")}</span>
                                 ) : (
                                     <span className="bg-slate-700 text-slate-300 font-black px-3 py-1 rounded-lg text-xs uppercase tracking-widest border border-slate-600">
-                                        Jogando...
+                                        {t("ranking.playing")}
                                     </span>
                                 )}
                             </div>

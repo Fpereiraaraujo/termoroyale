@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Player } from "../types/game";
 import { avatarFor } from "../utils/avatar";
+import { useI18n } from "../i18n";
 
 interface GameEvent {
     id: number;
@@ -20,6 +21,7 @@ let nextId = 1;
 export function EventFeed({ players, currentRound }: EventFeedProps) {
     const [events, setEvents] = useState<GameEvent[]>([]);
     const prevRef = useRef<Map<string, { won: boolean; alive: boolean; attempts: number }>>(new Map());
+    const { t } = useI18n();
 
     useEffect(() => {
         const newEvents: GameEvent[] = [];
@@ -32,12 +34,12 @@ export function EventFeed({ players, currentRound }: EventFeedProps) {
             }
 
             if (!prev.won && p.won) {
-                const t = p.solvedTimes?.[currentRound];
+                const time = p.solvedTimes?.[currentRound];
                 newEvents.push({
                     id: nextId++,
                     icon: "🏆",
                     color: "border-green-400 bg-green-50",
-                    text: `${p.name} resolveu${t !== undefined ? ` em ${t}s` : ""}`,
+                    text: `${p.name} ${time !== undefined ? `${t("events.solvedIn")} ${time}s` : t("events.solved")}`,
                     avatarName: p.name,
                 });
             }
@@ -46,7 +48,7 @@ export function EventFeed({ players, currentRound }: EventFeedProps) {
                     id: nextId++,
                     icon: "💀",
                     color: "border-red-400 bg-red-50",
-                    text: `${p.name} foi eliminado`,
+                    text: `${p.name} ${t("events.eliminated")}`,
                     avatarName: p.name,
                 });
             }

@@ -3,6 +3,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { RoomListItem, type RoomInfo } from "./RoomListItem.tsx";
 import { CreateRoomModal } from "./CreateRoomModal.tsx";
+import { useI18n, LanguageSwitcher } from "../i18n";
 
 interface LobbyProps {
     playerName: string;
@@ -13,6 +14,7 @@ interface LobbyProps {
 export function Lobby({ playerName, onJoinRoom, onCreateRoom }: LobbyProps) {
     const [rooms, setRooms] = useState<RoomInfo[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { t } = useI18n();
 
     const stompClient = useRef<Client | null>(null);
 
@@ -51,23 +53,26 @@ export function Lobby({ playerName, onJoinRoom, onCreateRoom }: LobbyProps) {
                 {/* Cabeçalho Limpo e Mobile Friendly */}
                 <div className="bg-slate-800 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center text-white gap-4 shrink-0">
                     <div className="text-center sm:text-left">
-                        <h2 className="text-2xl sm:text-3xl font-black tracking-widest uppercase">Lobby Principal</h2>
-                        <p className="text-slate-400 font-medium text-sm sm:text-base mt-1">Bem-vindo, <span className="text-yellow-400">{playerName}</span></p>
+                        <h2 className="text-2xl sm:text-3xl font-black tracking-widest uppercase">{t("lobby.title")}</h2>
+                        <p className="text-slate-400 font-medium text-sm sm:text-base mt-1">{t("lobby.welcome")} <span className="text-yellow-400">{playerName}</span></p>
                     </div>
 
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="w-full sm:w-auto bg-green-500 hover:bg-green-400 text-white font-black px-8 py-3.5 rounded-xl uppercase tracking-widest transition-all hover:shadow-lg active:scale-95 text-sm sm:text-base"
-                    >
-                        Criar Sala
-                    </button>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <LanguageSwitcher />
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="w-full sm:w-auto bg-green-500 hover:bg-green-400 text-white font-black px-8 py-3.5 rounded-xl uppercase tracking-widest transition-all hover:shadow-lg active:scale-95 text-sm sm:text-base"
+                        >
+                            {t("lobby.create")}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Lista de Salas Adaptável */}
                 <div className="flex-1 p-3 sm:p-6 overflow-y-auto bg-slate-100/50">
                     {rooms.length === 0 ? (
                         <div className="text-center text-slate-500 py-12 font-bold text-lg sm:text-xl px-4">
-                            Nenhuma sala disponível no momento. Crie a sua no botão acima!
+                            {t("lobby.empty")}
                         </div>
                     ) : (
                         <div className="flex flex-col gap-2.5 sm:gap-3">
