@@ -15,6 +15,7 @@ export interface Room {
     name: string;
     players: Player[];
     maxAttempts: number;
+    maxPlayers: number;
     finished: boolean;
     started: boolean;
     status: 'WAITING' | 'PLAYING' | 'FINISHED';

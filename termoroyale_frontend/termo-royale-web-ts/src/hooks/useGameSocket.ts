@@ -7,6 +7,8 @@ export function useGameSocket(
     playerName: string,
     selectedRoomId: string | null,
     selectedRoomName: string | null,
+    selectedRoomMaxPlayers: number | null,
+    selectedRoomIsPrivate: boolean | null,
     shouldConnect: boolean
 ) {
     const [room, setRoom] = useState<Room | null>(null);
@@ -40,7 +42,9 @@ export function useGameSocket(
                     body: JSON.stringify({
                         playerName,
                         roomId: selectedRoomId,
-                        roomName: selectedRoomName
+                        roomName: selectedRoomName,
+                        maxPlayers: selectedRoomMaxPlayers,
+                        isPrivate: selectedRoomIsPrivate
                     })
                 });
             },

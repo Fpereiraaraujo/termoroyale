@@ -22,8 +22,8 @@ public class RedisRoomRepositoryAdapter implements RoomRepositoryPort {
 
     @Override
     public Room save(Room room) {
-        // Salva a sala com um tempo de expiração (ex: 1 dia) para não entupir o Redis
-        redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + room.getId(), room, 1, TimeUnit.DAYS);
+        // Salva a sala com TTL de 20 minutos para não sobrecarregar o jogo
+        redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + room.getId(), room, 20, TimeUnit.MINUTES);
         return room;
     }
 
@@ -49,9 +49,16 @@ public class RedisRoomRepositoryAdapter implements RoomRepositoryPort {
         }
 
         // 3. Filtramos a primeira sala que ainda não começou e não terminou
+        long now = System.currentTimeMillis() / 1000L;
         return allRooms.stream()
-                .filter(Objects::nonNull) // Garante que não pegamos valores nulos do Redis
-                .filter(r -> !r.isStarted() && !r.isFinished())
+                .filter(Objects::nonNull)
+                .filter(r -> {
+                    // Exclui salas já iniciadas ou finalizadas
+                    if (r.isStarted() || r.isFinished()) return false;
+                    // Exclui salas com mais de expiration segundos desde criação
+                    Long exp = r.getExpiration() != null ? r.getExpiration() : 1200L;
+                    return (r.getCreatedAt() + exp) > now;
+                })
                 .findFirst();
     }
 
@@ -60,9 +67,14 @@ public class RedisRoomRepositoryAdapter implements RoomRepositoryPort {
         Set<String> keys = redisTemplate.keys("room:*");
         if (keys == null) return List.of();
 
+        long now = System.currentTimeMillis() / 1000L;
         return keys.stream()
                 .map(key -> (Room) redisTemplate.opsForValue().get(key))
                 .filter(Objects::nonNull)
+                .filter(r -> {
+                    Long exp = r.getExpiration() != null ? r.getExpiration() : 1200L;
+                    return (r.getCreatedAt() + exp) > now;
+                })
                 .toList();
     }
 

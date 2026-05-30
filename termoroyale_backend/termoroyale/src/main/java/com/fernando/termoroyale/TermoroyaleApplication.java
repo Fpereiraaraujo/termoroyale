@@ -3,6 +3,7 @@ package com.fernando.termoroyale;
 import com.fernando.termoroyale.core.port.DictionaryPort;
 import com.fernando.termoroyale.core.port.RoomRepositoryPort;
 import com.fernando.termoroyale.core.usecase.MatchmakingUseCase;
+import com.fernando.termoroyale.core.usecase.GameUseCase;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +19,7 @@ public class TermoroyaleApplication {
 
 
 	@Bean
-	public MatchmakingUseCase matchmakingUseCase(RoomRepositoryPort roomRepository,SimpMessagingTemplate messagingTemplate) {
+	public MatchmakingUseCase matchmakingUseCase(RoomRepositoryPort roomRepository,SimpMessagingTemplate messagingTemplate, GameUseCase gameUseCase) {
 		DictionaryPort dummyDictionary = new DictionaryPort() {
 			@Override
 			public boolean isValidWord(String word) { return true; }
@@ -26,7 +27,7 @@ public class TermoroyaleApplication {
 			public String getRandomTargetWord() { return "PLANO"; }
 		};
 
-		return new MatchmakingUseCase(roomRepository, dummyDictionary, messagingTemplate);
+		return new MatchmakingUseCase(roomRepository, dummyDictionary, messagingTemplate, gameUseCase);
 	}
 
 

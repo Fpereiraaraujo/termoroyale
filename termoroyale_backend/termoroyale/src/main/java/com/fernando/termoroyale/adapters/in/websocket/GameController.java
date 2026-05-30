@@ -30,7 +30,7 @@ public class GameController {
                         room.getId(),
                         room.getName(), // <-- Adicionamos o envio do Nome!
                         room.getPlayers().size(),
-                        room.getMaxAttempts(),
+                room.getMaxPlayers(),
                         room.isFinished() ? "PLAYING" : "WAITING"
                 ))
                 .toList();
@@ -39,11 +39,13 @@ public class GameController {
 
     @MessageMapping("/join")
     public void joinGame(@Payload JoinRequest request) {
-        // A chamada tem que ter os 3 parâmetros do request:
+        // A chamada tem que ter os parâmetros do request:
         Room room = matchmakingUseCase.joinOrCreateRoom(
                 request.playerName(),
                 request.roomId(),
-                request.roomName()
+                request.roomName(),
+                request.maxPlayers(),
+                request.isPrivate()
         );
 
         messagingTemplate.convertAndSendToUser(request.playerName(), "/queue/room", room);
@@ -71,5 +73,5 @@ public class GameController {
     // Records
     public record GuessRequest(String roomId, String playerName, String word) {}
     public record RoomListResponse(String id, String name, int playersCount, int maxPlayers, String status) {}
-    public record JoinRequest(String playerName, String roomId, String roomName) {}
+    public record JoinRequest(String playerName, String roomId, String roomName, Integer maxPlayers, Boolean isPrivate) {}
 }

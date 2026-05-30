@@ -5,19 +5,54 @@ import { Lobby } from "./components/Lobby.tsx";
 import { GameArena } from "./components/GameArena.tsx";
 import type { LetterStatus } from "./types/game";
 
+const GlobalStyles = () => (
+    <style>{`
+    @keyframes flipTile {
+        0% { transform: rotateX(-90deg) scale(1.1); opacity: 0; }
+        50% { transform: rotateX(20deg) scale(1.05); opacity: 1; }
+        100% { transform: rotateX(0) scale(1); opacity: 1; }
+    }
+    .animate-flip {
+        animation: flipTile 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        opacity: 0;
+    }
+  `}</style>
+);
+
 export default function App() {
   const [meuNome, setMeuNome] = useState("");
   const [inLobby, setInLobby] = useState(false);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [selectedRoomName, setSelectedRoomName] = useState<string | null>(null);
-  const [currentGuess, setCurrentGuess] = useState("");
 
-  const { room, isConnected, sendGuess } = useGameSocket(
+  // LÊ A URL INICIALMENTE: Se tiver /room/ID, já salva o ID
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(() => {
+    const path = window.location.pathname;
+    if (path.startsWith('/room/')) return path.replace('/room/', '');
+    return null;
+  });
+
+  const [selectedRoomName, setSelectedRoomName] = useState<string | null>(null);
+  const [selectedRoomMaxPlayers, setSelectedRoomMaxPlayers] = useState<number | null>(null);
+  const [selectedRoomIsPrivate, setSelectedRoomIsPrivate] = useState<boolean | null>(null);
+  const [currentGuess, setCurrentGuess] = useState<string[]>(Array(5).fill(""));
+  const [activeCol, setActiveCol] = useState(0);
+
+    const { room, isConnected, sendGuess } = useGameSocket(
       meuNome,
       selectedRoomId,
       selectedRoomName,
+      selectedRoomMaxPlayers,
+      selectedRoomIsPrivate,
       (Boolean(meuNome) && !inLobby)
-  );
+    );
+
+  // ATUALIZA A URL NO NAVEGADOR AUTOMATICAMENTE
+  useEffect(() => {
+    if (room?.id) {
+      window.history.replaceState({}, '', `/room/${room.id}`);
+    } else if (!inLobby && !selectedRoomId && meuNome) {
+      window.history.replaceState({}, '', `/`);
+    }
+  }, [room?.id, inLobby, selectedRoomId, meuNome]);
 
   const myPlayer = useMemo(() => {
     if (!room || !meuNome) return undefined;
@@ -25,7 +60,7 @@ export default function App() {
   }, [room, meuNome]);
 
   const myGuesses = myPlayer?.guesses || [];
-  const myResults = (myPlayer?.results as LetterStatus[][][]) || [];
+  const myResults = (myPlayer?.results as unknown as LetterStatus[][][]) || [];
 
   const keyStatuses = useMemo(() => {
     const statuses: Record<string, LetterStatus> = {};
@@ -33,13 +68,14 @@ export default function App() {
     myGuesses.forEach((word, wordIndex) => {
       const gridsResults = myResults[wordIndex];
       if (!gridsResults) return;
-      const firstGridResult = gridsResults[0];
-      if (!firstGridResult) return;
-      word.split("").forEach((letter, letterIndex) => {
-        const currentStatus = firstGridResult[letterIndex] as LetterStatus;
-        if (statuses[letter] === "CORRECT") return;
-        if (statuses[letter] === "PRESENT" && currentStatus === "ABSENT") return;
-        statuses[letter] = currentStatus;
+
+      gridsResults.forEach(gridResult => {
+        word.split("").forEach((letter, letterIndex) => {
+          const currentStatus = gridResult[letterIndex] as LetterStatus;
+          if (statuses[letter] === "CORRECT") return;
+          if (statuses[letter] === "PRESENT" && currentStatus === "ABSENT") return;
+          statuses[letter] = currentStatus;
+        });
       });
     });
     return statuses;
@@ -47,17 +83,39 @@ export default function App() {
 
   const handleKeyPress = (key: string) => {
     if (!myPlayer || room?.status !== "PLAYING" || !myPlayer.isAlive) return;
+
     const k = key.toUpperCase();
+
     if (k === 'ENTER') {
-      if (currentGuess.length === 5) sendGuess(currentGuess);
+      const word = currentGuess.join("");
+      if (word.length === 5 && !currentGuess.includes("")) {
+        sendGuess(word);
+      }
     } else if (k === 'DELETE' || k === 'BACKSPACE') {
-      setCurrentGuess(prev => prev.slice(0, -1));
-    } else if (currentGuess.length < 5 && /^[A-Z]$/.test(k)) {
-      setCurrentGuess(prev => prev + k);
+      setCurrentGuess(prev => {
+        const newGuess = [...prev];
+        if (newGuess[activeCol] !== "") {
+          newGuess[activeCol] = "";
+        } else if (activeCol > 0) {
+          newGuess[activeCol - 1] = "";
+          setActiveCol(activeCol - 1);
+        }
+        return newGuess;
+      });
+    } else if (/^[A-Z]$/.test(k)) {
+      setCurrentGuess(prev => {
+        const newGuess = [...prev];
+        newGuess[activeCol] = k;
+        return newGuess;
+      });
+      if (activeCol < 4) setActiveCol(activeCol + 1);
     }
   };
 
-  useEffect(() => { setCurrentGuess(""); }, [myGuesses.length]);
+  useEffect(() => {
+    setCurrentGuess(Array(5).fill(""));
+    setActiveCol(0);
+  }, [myGuesses.length]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -65,64 +123,78 @@ export default function App() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (!meuNome) return <Home onJoin={(n) => { setMeuNome(n); setInLobby(true); }} />;
-
-  if (inLobby) return (
-      <Lobby
-          playerName={meuNome}
-          onJoinRoom={(id) => { setSelectedRoomId(id); setInLobby(false); }}
-          onCreateRoom={(n) => { setSelectedRoomName(n); setInLobby(false); }}
-      />
+  // SE NÃO TEM NOME, PEDE O NOME.
+  // Se a pessoa entrou pelo link (selectedRoomId != null), pula o lobby!
+  if (!meuNome) return (
+      <><GlobalStyles />
+        <Home onJoin={(n) => {
+          setMeuNome(n);
+          if (!selectedRoomId) setInLobby(true);
+        }} />
+      </>
   );
 
-  if (!isConnected || !room) return (
-      <div className="h-screen w-screen flex items-center justify-center bg-sky-200 font-black text-2xl animate-pulse">
-        CONECTANDO À ARENA...
-      </div>
+    if (inLobby) return (
+      <><GlobalStyles />
+      <Lobby
+        playerName={meuNome}
+        onJoinRoom={(id) => { setSelectedRoomId(id); setInLobby(false); }}
+        onCreateRoom={(n, maxPlayers, isPrivate) => {
+          setSelectedRoomName(n);
+          setSelectedRoomMaxPlayers(maxPlayers);
+          setSelectedRoomIsPrivate(isPrivate);
+          setInLobby(false);
+        }}
+      /></>
+    );
+
+  if (!isConnected || !room || !myPlayer) return (
+      <><GlobalStyles /><div className="h-screen w-screen flex items-center justify-center bg-slate-900 text-white font-black text-2xl animate-pulse">SINCRONIZANDO...</div></>
   );
 
   if (room.status === "WAITING") return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-sky-200 bg-cover bg-center p-4"
-           style={{ backgroundImage: "url('/bg-stadium.jpg')" }}>
-        <div className="w-full max-w-2xl bg-slate-100/90 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-white flex flex-col gap-6 text-center">
-          <div>
-            <span className="bg-slate-800 text-yellow-400 font-black px-4 py-1.5 rounded-full text-xs uppercase tracking-widest">Aguardando Competidores</span>
-            <h2 className="text-4xl font-black text-slate-700 uppercase mt-3 tracking-wide">{room.name}</h2>
-            <p className="text-slate-400 font-bold text-sm mt-1">ID da Sala: #{room.id}</p>
-          </div>
-          <div className="bg-slate-800 text-white rounded-2xl p-6 border-b-4 border-slate-950 shadow-inner">
-            <span className="text-xs font-black uppercase text-slate-400 tracking-widest block mb-1">A partida começa em</span>
-            <span className="text-6xl font-black font-mono text-green-400 tracking-wider">{formatTime(room.timeLeft)}</span>
-          </div>
-          <div className="text-left">
-            <h3 className="text-lg font-black text-slate-700 uppercase tracking-wider mb-3">Jogadores Confirmados ({room.players.length} / 20)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[30vh] overflow-y-auto pr-2">
-              {room.players.map(player => (
-                  <div key={player.id} className="bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3 shadow-sm">
-                    <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                    <span className="font-black text-slate-700 uppercase tracking-wide">{player.name}</span>
-                    {player.name.toLowerCase() === meuNome.toLowerCase() && <span className="text-xs font-bold text-sky-500 ml-auto">(Você)</span>}
-                  </div>
-              ))}
+      <><GlobalStyles />
+        <div className="h-screen w-screen flex flex-col items-center justify-center bg-sky-200 bg-cover bg-center p-4" style={{ backgroundImage: "url('/bg-stadium.jpg')" }}>
+          <div className="w-full max-w-2xl bg-slate-100/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-white flex flex-col gap-6 text-center">
+            <div>
+              <span className="bg-slate-800 text-yellow-400 font-black px-4 py-1.5 rounded-full text-xs uppercase tracking-widest shadow-inner">Aguardando Competidores</span>
+              <h2 className="text-5xl font-black text-slate-800 uppercase mt-4 tracking-wide">{room.name}</h2>
+              <p className="text-slate-400 font-bold text-sm mt-2">Link da Sala: <span className="text-sky-600 bg-sky-100 px-2 py-1 rounded select-all cursor-pointer">{window.location.origin}/room/{room.id}</span></p>
+            </div>
+            <div className="bg-slate-800 text-white rounded-3xl p-8 border-b-8 border-slate-950 shadow-inner mt-4">
+              <span className="text-sm font-black uppercase text-slate-400 tracking-widest block mb-2">A partida começa em</span>
+              <span className="text-7xl font-black font-mono text-green-400 tracking-wider">{formatTime(room.timeLeft)}</span>
+            </div>
+            <div className="text-left mt-4">
+              <h3 className="text-lg font-black text-slate-700 uppercase tracking-wider mb-4">Confirmados ({room.players.length} / {room.maxPlayers})</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[30vh] overflow-y-auto pr-2">
+                {room.players.map(player => (
+                    <div key={player.id} className="bg-white border-2 border-slate-200 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+                      <div className="w-4 h-4 rounded-full bg-green-500 animate-pulse shadow-sm" />
+                      <span className="font-black text-slate-700 uppercase tracking-wide text-lg">{player.name}</span>
+                      {player.name.toLowerCase() === meuNome.toLowerCase() && <span className="text-xs font-black text-white bg-sky-500 px-2 py-1 rounded-full ml-auto">VOCÊ</span>}
+                    </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </div></>
   );
 
-  if (!myPlayer) return <div className="h-screen flex items-center justify-center bg-slate-900 text-white">SINCRONIZANDO...</div>;
-
   return (
-      <GameArena
-          room={room}
-          myPlayer={myPlayer}
-          myGuesses={myGuesses}
-          myResults={myResults}
-          currentGuess={currentGuess}
-          formatTime={formatTime}
-          handleKeyPress={handleKeyPress}
-          keyStatuses={keyStatuses}
-          meuNome={meuNome}
-      />
+      <><GlobalStyles />
+        <GameArena
+            room={room}
+            myPlayer={myPlayer}
+            myGuesses={myGuesses}
+            myResults={myResults}
+            currentGuess={currentGuess}
+            activeCol={activeCol}
+            setActiveCol={setActiveCol}
+            formatTime={formatTime}
+            handleKeyPress={handleKeyPress}
+            keyStatuses={keyStatuses}
+            meuNome={meuNome}
+        /></>
   );
 }

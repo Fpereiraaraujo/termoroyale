@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Getter @Setter
 public class Player {
@@ -21,6 +23,8 @@ public class Player {
 
     private List<String> guesses = new ArrayList<>();
     private List<List<List<String>>> results = new ArrayList<>();
+    // Map round -> seconds elapsed when player solved that round
+    private Map<Integer, Integer> solvedTimes = new HashMap<>();
 
     // Construtor vazio para o Jackson/Redis
     public Player() {

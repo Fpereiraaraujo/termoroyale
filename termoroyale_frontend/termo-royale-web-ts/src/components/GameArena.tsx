@@ -10,7 +10,9 @@ interface GameArenaProps {
     myPlayer: any;
     myGuesses: string[];
     myResults: LetterStatus[][][];
-    currentGuess: string;
+    currentGuess: string[];
+    activeCol: number;
+    setActiveCol: (col: number) => void;
     formatTime: (s: number) => string;
     handleKeyPress: (key: string) => void;
     keyStatuses: Record<string, LetterStatus>;
@@ -23,6 +25,8 @@ export function GameArena({
                               myGuesses,
                               myResults,
                               currentGuess,
+                              activeCol,
+                              setActiveCol,
                               formatTime,
                               handleKeyPress,
                               keyStatuses,
@@ -31,10 +35,21 @@ export function GameArena({
 
     useEffect(() => {
         const handleKeyDownEvent = (event: KeyboardEvent) => {
+            if (event.ctrlKey || event.metaKey || event.altKey) return;
             const key = event.key.toUpperCase();
-            if (key === "ENTER" || key === "BACKSPACE" || key === "DELETE") {
+
+            // Bloqueia comandos se o jogador não estiver vivo ou já tiver ganho o round
+            if (!myPlayer?.isAlive || myPlayer?.won) return;
+
+            if (key === "ENTER" || key === "BACKSPACE" || key === "DELETE" || key === "ARROWLEFT" || key === "ARROWRIGHT") {
                 event.preventDefault();
-                handleKeyPress(key === "BACKSPACE" ? "DELETE" : key);
+                if (key === "ARROWLEFT") {
+                    setActiveCol(Math.max(0, activeCol - 1));
+                } else if (key === "ARROWRIGHT") {
+                    setActiveCol(Math.min(4, activeCol + 1));
+                } else {
+                    handleKeyPress(key === "BACKSPACE" ? "DELETE" : key);
+                }
             } else if (/^[A-Z]$/.test(key)) {
                 event.preventDefault();
                 handleKeyPress(key);
@@ -43,45 +58,54 @@ export function GameArena({
 
         window.addEventListener("keydown", handleKeyDownEvent);
         return () => window.removeEventListener("keydown", handleKeyDownEvent);
-    }, [handleKeyPress]);
+    }, [handleKeyPress, activeCol, setActiveCol, myPlayer]);
 
     return (
-        <div className="h-screen w-screen flex bg-sky-200 bg-cover bg-center overflow-hidden"
+        <div className="h-screen w-screen flex overflow-hidden bg-sky-200 bg-cover bg-center"
              style={{ backgroundImage: "url('/bg-stadium.jpg')" }}>
 
-            <div className="flex-1 flex flex-col justify-between p-4 relative">
+            <div className="flex-1 flex flex-col relative">
                 <Header
-                    lives={myPlayer?.isAlive ? (room.maxAttempts - (myPlayer?.currentAttempts || 0)) : 0}
+                    lives={myPlayer?.isAlive ? room.maxAttempts - (myPlayer?.currentAttempts || 0) : 0}
                     timeRemaining={formatTime(room.timeLeft)}
                     currentPhase={room.status === "FINISHED" ? "FINALIZADO" : `ROUND ${room.currentRound}`}
                 />
 
-                <div className="flex-1 flex items-center justify-center gap-6 w-full">
-                    {myPlayer?.won ? (
-                        <div className="bg-green-900/90 p-10 rounded-3xl border-4 border-green-500 text-center text-white shadow-2xl">
-                            <h2 className="text-5xl font-black uppercase tracking-widest">Você Venceu!</h2>
-                            <p className="mt-4 text-xl font-bold">Aguardando os outros competidores...</p>
-                            <div className="mt-8 text-6xl animate-pulse">⏳</div>
+                <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
+                    {/* Mensagem de Espera (Vencedor do Round) */}
+                    {myPlayer?.won && (
+                        <div className="absolute top-10 z-50 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-2xl font-black uppercase shadow-2xl border-4 border-white animate-bounce text-center">
+                            <h3 className="text-2xl">Rodada Concluída!</h3>
+                            <p className="text-sm opacity-90">Aguardando a cota de classificados...</p>
                         </div>
-                    ) : myPlayer?.isAlive ? (
-                        <Board
-                            title={room.name}
-                            guesses={myGuesses}
-                            results={myResults}
-                            currentGuess={currentGuess}
-                            targetWords={room.targetWords}
-                        />
+                    )}
+
+                    {/* Tela de Eliminado */}
+                    {!myPlayer?.isAlive ? (
+                        <div className="flex flex-col items-center justify-center p-12 bg-slate-900/90 backdrop-blur-xl rounded-[3rem] border-4 border-slate-700 shadow-2xl text-white">
+                            <div className="text-8xl mb-6">👻</div>
+                            <h2 className="text-5xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-slate-500">Eliminado</h2>
+                            <p className="text-slate-400 mt-4 font-bold text-xl">Continue assistindo pelo ranking.</p>
+                        </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center p-10 bg-slate-800/80 backdrop-blur-lg rounded-3xl border-2 border-white/20 shadow-2xl text-white">
-                            <div className="text-6xl mb-4">👻</div>
-                            <h2 className="text-4xl font-black uppercase tracking-widest">Você foi eliminado!</h2>
-                            <p className="text-slate-300 mt-2 font-bold">Continue assistindo para ver quem será o GOAT.</p>
+                        // Game Board
+                        <div className="w-full flex justify-center">
+                            <Board
+                                title={room.name}
+                                guesses={myGuesses}
+                                results={myResults}
+                                currentGuess={currentGuess}
+                                targetWords={room.targetWords}
+                                activeCol={activeCol}
+                                onTileClick={setActiveCol}
+                            />
                         </div>
                     )}
                 </div>
 
+                {/* Keyboard (Só aparece se estiver vivo e não tiver ganhado o round) */}
                 {myPlayer?.isAlive && !myPlayer?.won && (
-                    <div className="w-full flex justify-center pb-4">
+                    <div className="w-full flex justify-center pb-6">
                         <Keyboard onKeyPress={handleKeyPress} keyStatuses={keyStatuses} />
                     </div>
                 )}
