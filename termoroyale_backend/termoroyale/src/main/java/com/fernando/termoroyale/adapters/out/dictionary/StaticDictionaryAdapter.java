@@ -5,32 +5,31 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class StaticDictionaryAdapter implements DictionaryPort {
 
-    // Lista de palavras que podem ser sorteadas como a "Palavra do Dia"
+    // Sequência FIXA de palavras-alvo para facilitar testes manuais.
+    // Cada sala consome: 1 palavra no R1 + 2 no R2 + 4 no R3 = 7 palavras por partida.
+    // O índice é cíclico, então a próxima sala começa pela palavra seguinte.
     private static final List<String> TARGET_WORDS = Arrays.asList(
-            "SAGAZ", "AMAGO", "TERMO", "NOBRE", "ALGOZ", "ERUDI", "PLENO", "ETICA", "MUNDO", "TENAZ",
-            "SUTIL", "VIGOR", "FORTE", "PODER", "IDEIA", "CERNE", "ORDEM", "FAZER", "VALER", "MORAL",
-            "POVOO", "HONRA", "JUSTO", "MUITO", "ASSIM", "SOBRE", "VIVER", "ARENA", "CORPO", "TEMPO"
+            "PLANO",   // R1
+            "TERMO", "ARENA",            // R2 (Dueto)
+            "MUNDO", "NOBRE", "CORPO", "TEMPO" // R3 (Quarteto)
     );
 
-    private final Random random = new Random();
+    private final AtomicInteger cursor = new AtomicInteger(0);
 
     @Override
     public String getRandomTargetWord() {
-        // O backend escolhe UMA dessas para ser a certa
-        return TARGET_WORDS.get(random.nextInt(TARGET_WORDS.size()));
+        int idx = Math.floorMod(cursor.getAndIncrement(), TARGET_WORDS.size());
+        return TARGET_WORDS.get(idx);
     }
 
     @Override
     public boolean isValidWord(String word) {
-        // LOGICA CORRIGIDA:
-        // Para o jogo fluir, qualquer palavra de 5 letras é "válida" para ser chutada.
-        // Se você quiser ser rigoroso no futuro, pode carregar um arquivo .txt com
-        // todas as palavras da língua portuguesa aqui.
+        // Qualquer palavra de 5 letras é aceita como chute válido.
         return word != null && word.trim().length() == 5;
     }
 }

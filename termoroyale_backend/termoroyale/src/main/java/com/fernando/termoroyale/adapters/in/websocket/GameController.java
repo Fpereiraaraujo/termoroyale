@@ -66,14 +66,14 @@ public class GameController {
                     request.playerName(),
                     "/queue/errors",
                     Map.of("message", e.getMessage(), "type", "INVALID_WORD")
+            );
+        } catch (Exception e) {
             log.error("Erro ao processar palpite na sala {}: {}", request.roomId(), e.getMessage());
             messagingTemplate.convertAndSendToUser(
                     request.playerName(),
                     "/queue/errors",
                     Map.of("message", e.getMessage() != null ? e.getMessage() : "Erro ao processar palpite", "type", "GUESS_ERROR")
-            
-        } catch (Exception e) {
-            System.err.println("Erro no palpite: " + e.getMessage());
+            );
         }
     }
 

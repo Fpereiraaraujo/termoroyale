@@ -87,7 +87,7 @@ public class MatchmakingUseCase {
             Lock lock = lockRegistry.lockFor(roomId);
             lock.lock();
             try {
-                Room room = roomRepository.findById(roomId).orElse(null);
+                 room = roomRepository.findById(roomId).orElse(null);
                 if (room == null || room.isFinished()) {
                     lockRegistry.release(roomId);
                     throw new RuntimeException("Encerrando timer...");
@@ -126,7 +126,8 @@ public class MatchmakingUseCase {
             } catch (Exception e) {
                 throw new RuntimeException("Timer parado", e);
             } finally {
-                lock.unlock(
+                lock.unlock();
+            }
         }, 1, 1, TimeUnit.SECONDS);
     }
 
