@@ -54,7 +54,7 @@ public class RedisRoomRepositoryAdapter implements RoomRepositoryPort {
                 .filter(Objects::nonNull)
                 .filter(r -> {
                     // Exclui salas já iniciadas ou finalizadas
-                    if (r.isStarted() || r.isFinished()) return false;
+                    if (r.isStarted() || r.isFinished() || !"WAITING".equals(r.getStatus())) return false;
                     // Exclui salas com mais de expiration segundos desde criação
                     Long exp = r.getExpiration() != null ? r.getExpiration() : 1200L;
                     return (r.getCreatedAt() + exp) > now;

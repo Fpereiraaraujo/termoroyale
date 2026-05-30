@@ -42,7 +42,7 @@ public class Room {
         this.players.add(player);
     }
 
-    public void updatePlayerProgress(String playerName, String word, boolean won, List<List<String>> results) {
+    public void updatePlayerProgress(String playerName, String word, List<List<String>> results) {
         players.stream()
                 .filter(p -> p.getName().equalsIgnoreCase(playerName))
                 .findFirst()
@@ -51,7 +51,13 @@ public class Room {
                     p.getResults().add(results);
                     p.setCurrentAttempts(p.getCurrentAttempts() + 1);
 
-                    if (won) {
+                    // Vitória da FASE = todos os grids foram resolvidos ao longo
+                    // das tentativas acumuladas (não numa única palavra). Cada grid
+                    // tem seu próprio alvo; o jogador vence quando cada um teve, em
+                    // alguma tentativa, todas as letras CORRECT.
+                    boolean phaseWon = allGridsSolved(p);
+
+                    if (phaseWon) {
                         p.setWon(true);
                         if (!p.getSolvedTimes().containsKey(this.currentRound)) {
                             int elapsed = Math.max(0, this.phaseDuration - this.timeLeft);
@@ -63,6 +69,33 @@ public class Room {
                         p.setAlive(false);
                     }
                 });
+    }
+
+    /**
+     * Verifica se o jogador resolveu TODOS os grids da fase atual.
+     *
+     * <p>O histórico de resultados do jogador é {@code [tentativa][grid][letra]}.
+     * Um grid está resolvido se em alguma tentativa todas as suas letras vieram
+     * CORRECT. A fase é vencida quando todos os grids ({@code targetWords})
+     * estão resolvidos.</p>
+     */
+    private boolean allGridsSolved(Player p) {
+        int gridCount = this.targetWords.size();
+        if (gridCount == 0) return false;
+
+        for (int grid = 0; grid < gridCount; grid++) {
+            boolean solved = false;
+            for (List<List<String>> attempt : p.getResults()) {
+                if (attempt.size() <= grid) continue;
+                List<String> gridResult = attempt.get(grid);
+                if (!gridResult.isEmpty() && gridResult.stream().allMatch("CORRECT"::equals)) {
+                    solved = true;
+                    break;
+                }
+            }
+            if (!solved) return false;
+        }
+        return true;
     }
 
     public int getRemainingAttempts(String playerName) {

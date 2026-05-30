@@ -22,8 +22,19 @@ public class GameUseCase {
     private final TermoValidator validator;
     private final DictionaryPort dictionaryPort;
     private final SimpMessagingTemplate messagingTemplate;
+    private final RoomLockRegistry lockRegistry;
 
     public GuessResponse processGuess(String roomId, String playerName, String word) {
+        java.util.concurrent.locks.Lock lock = lockRegistry.lockFor(roomId);
+        lock.lock();
+        try {
+            return doProcessGuess(roomId, playerName, word);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private GuessResponse doProcessGuess(String roomId, String playerName, String word) {
         log.info(">>> [PROCESS GUESS] Sala: {} | Jogador: {} | Palavra: {}", roomId, playerName, word);
 
         Room room = roomRepository.findById(roomId).orElseThrow();
@@ -39,17 +50,13 @@ public class GameUseCase {
         }
 
         List<List<String>> allResults = new ArrayList<>();
-        boolean allGridsWon = true;
 
         for (String target : room.getTargetWords()) {
             LetterStatus[] statuses = validator.validate(word, target);
-            boolean gridWon = Arrays.stream(statuses).allMatch(s -> s == LetterStatus.CORRECT);
-            if (!gridWon) allGridsWon = false;
             allResults.add(Arrays.stream(statuses).map(Enum::name).toList());
         }
 
-        log.info("Jogador {} | Status de Vitória: {}", playerName, allGridsWon);
-        room.updatePlayerProgress(playerName, word, allGridsWon, allResults);
+        room.updatePlayerProgress(playerName, word, allResults);
 
         checkRoundProgression(room);
 
@@ -64,20 +71,26 @@ public class GameUseCase {
     }
 
     public void onPhaseTimeout(String roomId) {
-        log.info(">>> [TIMEOUT] Tempo esgotado para sala: {}", roomId);
-        Room room = roomRepository.findById(roomId).orElseThrow();
+        java.util.concurrent.locks.Lock lock = lockRegistry.lockFor(roomId);
+        lock.lock();
+        try {
+            log.info(">>> [TIMEOUT] Tempo esgotado para sala: {}", roomId);
+            Room room = roomRepository.findById(roomId).orElseThrow();
 
-        if (!"FINISHED".equals(room.getStatus())) {
-            room.getPlayers().stream()
-                    .filter(p -> p.isAlive() && !p.isWon())
-                    .forEach(p -> {
-                        log.info("Jogador {} eliminado por timeout", p.getName());
-                        p.setAlive(false);
-                    });
+            if (!"FINISHED".equals(room.getStatus())) {
+                room.getPlayers().stream()
+                        .filter(p -> p.isAlive() && !p.isWon())
+                        .forEach(p -> {
+                            log.info("Jogador {} eliminado por timeout", p.getName());
+                            p.setAlive(false);
+                        });
 
-            checkRoundProgression(room);
-            roomRepository.save(room);
-            messagingTemplate.convertAndSend("/topic/room/" + roomId, room);
+                checkRoundProgression(room);
+                roomRepository.save(room);
+                messagingTemplate.convertAndSend("/topic/room/" + roomId, room);
+            }
+        } finally {
+            lock.unlock();
         }
     }
 

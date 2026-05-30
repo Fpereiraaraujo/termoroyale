@@ -5,6 +5,8 @@ import com.fernando.termoroyale.core.domain.Room;
 import com.fernando.termoroyale.core.port.RoomRepositoryPort;
 import com.fernando.termoroyale.core.port.DictionaryPort;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -13,15 +15,19 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 @Service
 @RequiredArgsConstructor
 public class MatchmakingUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(MatchmakingUseCase.class);
+
     private final RoomRepositoryPort roomRepository;
     private final DictionaryPort dictionaryPort;
     private final SimpMessagingTemplate messagingTemplate;
     private final GameUseCase gameUseCase;
+    private final RoomLockRegistry lockRegistry;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
 
     public Room joinOrCreateRoom(String playerName, String requestedRoomId, String requestedRoomName, Integer requestedMaxPlayers, Boolean isPrivate) {
@@ -56,6 +62,7 @@ public class MatchmakingUseCase {
 
         if (room.getPlayers().size() >= room.getMaxPlayers() && "WAITING".equals(room.getStatus())) {
             room.setStatus("PLAYING");
+            room.setStarted(true);
             if (room.getInitialPlayersCount() == 0) {
                 room.setInitialPlayersCount(room.getPlayers().size());
             }
@@ -64,10 +71,8 @@ public class MatchmakingUseCase {
         }
 
         Room savedRoom = roomRepository.save(room);
-        System.out.println("DEBUG SALA: " + savedRoom.getId() +
-                " | Status: " + savedRoom.getStatus() +
-                " | Tempo: " + savedRoom.getTimeLeft() +
-                " | Players: " + savedRoom.getPlayers().size());
+        log.debug("DEBUG SALA: {} | Status: {} | Tempo: {} | Players: {}",
+                savedRoom.getId(), savedRoom.getStatus(), savedRoom.getTimeLeft(), savedRoom.getPlayers().size());
 
         if (isNewRoom) {
             startRoomTimer(savedRoom.getId());
@@ -79,10 +84,12 @@ public class MatchmakingUseCase {
     private void startRoomTimer(String roomId) {
         scheduler.scheduleAtFixedRate(() -> {
             Room room = null;
+            Lock lock = lockRegistry.lockFor(roomId);
+            lock.lock();
             try {
-                room = roomRepository.findById(roomId).orElse(null);
+                Room room = roomRepository.findById(roomId).orElse(null);
                 if (room == null || room.isFinished()) {
-                    // stop scheduling for this room
+                    lockRegistry.release(roomId);
                     throw new RuntimeException("Encerrando timer...");
                 }
 
@@ -96,6 +103,7 @@ public class MatchmakingUseCase {
                             room.setInitialPlayersCount(room.getPlayers().size());
                         }
                         room.setStatus("PLAYING");
+                        room.setStarted(true);
                         room.setTimeLeft(room.getPhaseDuration());
                         room.setPhaseStartTimestamp(System.currentTimeMillis() / 1000L);
                         roomRepository.save(room);
@@ -105,7 +113,7 @@ public class MatchmakingUseCase {
                         try {
                             gameUseCase.onPhaseTimeout(roomId);
                         } catch (Exception ex) {
-                            System.err.println("Erro ao processar fim de fase: " + ex.getMessage());
+                            log.error("Erro ao processar fim de fase: {}", ex.getMessage());
                         }
                         // reload room for latest state
                         room = roomRepository.findById(roomId).orElse(room);
@@ -116,10 +124,9 @@ public class MatchmakingUseCase {
                 messagingTemplate.convertAndSend("/topic/room/" + roomId, room);
 
             } catch (Exception e) {
-                // stop timer silently
-                // System.err.println("Timer parado para room " + roomId + ": " + e.getMessage());
                 throw new RuntimeException("Timer parado", e);
-            }
+            } finally {
+                lock.unlock(
         }, 1, 1, TimeUnit.SECONDS);
     }
 

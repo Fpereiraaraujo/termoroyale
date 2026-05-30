@@ -18,6 +18,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GameController {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GameController.class);
+
     private final MatchmakingUseCase matchmakingUseCase;
     private final GameUseCase gameUseCase;
     private final SimpMessagingTemplate messagingTemplate;
@@ -31,7 +33,7 @@ public class GameController {
                         room.getName(), // <-- Adicionamos o envio do Nome!
                         room.getPlayers().size(),
                 room.getMaxPlayers(),
-                        room.isFinished() ? "PLAYING" : "WAITING"
+                        room.getStatus()
                 ))
                 .toList();
     }
@@ -64,7 +66,12 @@ public class GameController {
                     request.playerName(),
                     "/queue/errors",
                     Map.of("message", e.getMessage(), "type", "INVALID_WORD")
-            );
+            log.error("Erro ao processar palpite na sala {}: {}", request.roomId(), e.getMessage());
+            messagingTemplate.convertAndSendToUser(
+                    request.playerName(),
+                    "/queue/errors",
+                    Map.of("message", e.getMessage() != null ? e.getMessage() : "Erro ao processar palpite", "type", "GUESS_ERROR")
+            
         } catch (Exception e) {
             System.err.println("Erro no palpite: " + e.getMessage());
         }
