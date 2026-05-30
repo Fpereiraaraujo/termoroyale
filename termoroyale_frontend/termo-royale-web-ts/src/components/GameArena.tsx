@@ -2,6 +2,7 @@ import { Header } from "./Header.tsx";
 import { Board } from "./Board.tsx";
 import { Keyboard } from "./Keyboard.tsx";
 import { Ranking } from "./Ranking.tsx";
+import { SpectatorBoards } from "./SpectatorBoards.tsx";
 import { useEffect } from "react";
 import type { Room, LetterStatus } from "../types/game";
 
@@ -81,11 +82,12 @@ export function GameArena({
                     )}
 
                     {!myPlayer?.isAlive ? (
-                        <div className="flex flex-col items-center justify-center p-12 bg-slate-900/90 backdrop-blur-xl rounded-[3rem] border-4 border-slate-700 shadow-2xl text-white">
-                            <div className="text-8xl mb-6">👻</div>
-                            <h2 className="text-5xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-slate-500">Eliminado</h2>
-                            <p className="text-slate-400 mt-4 font-bold text-xl">Continue assistindo pelo ranking.</p>
-                        </div>
+                        <SpectatorBoards
+                            players={room.players}
+                            meuNome={meuNome}
+                            targetWords={room.targetWords}
+                            maxAttempts={room.maxAttempts}
+                        />
                     ) : (
                         <div className="w-full flex justify-center">
                             <Board
@@ -113,6 +115,7 @@ export function GameArena({
                 players={room.players}
                 currentPlayerName={meuNome}
                 currentRound={room.currentRound}
+                phaseElapsed={Math.max(0, (room.phaseDuration ?? 300) - room.timeLeft)}
             />
         </div>
     );

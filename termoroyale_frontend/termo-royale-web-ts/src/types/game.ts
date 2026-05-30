@@ -8,6 +8,7 @@ export interface Player {
     won: boolean;
     guesses: string[];
     results: LetterStatus[][][];
+    solvedTimes?: Record<number, number>;
 }
 
 export interface Room {
@@ -20,6 +21,10 @@ export interface Room {
     started: boolean;
     status: 'WAITING' | 'PLAYING' | 'FINISHED';
     timeLeft: number;
+    phaseDuration?: number;
     currentRound: number;
     targetWords: string[];
+    roundTargets?: Record<number, string[]>;
+    suddenDeath?: boolean;
+    graceWindowSeconds?: number;
 }

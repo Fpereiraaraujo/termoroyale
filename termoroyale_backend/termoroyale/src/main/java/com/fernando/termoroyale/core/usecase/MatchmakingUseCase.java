@@ -30,7 +30,7 @@ public class MatchmakingUseCase {
     private final RoomLockRegistry lockRegistry;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
 
-    public Room joinOrCreateRoom(String playerName, String requestedRoomId, String requestedRoomName, Integer requestedMaxPlayers, Boolean isPrivate) {
+    public Room joinOrCreateRoom(String playerName, String playerId, String requestedRoomId, String requestedRoomName, Integer requestedMaxPlayers, Boolean isPrivate) {
         Room room;
         boolean isNewRoom = false;
 
@@ -47,14 +47,25 @@ public class MatchmakingUseCase {
             }
         }
 
-        if (room.getPlayers().size() >= room.getMaxPlayers()) {
-            throw new RuntimeException("A sala já está lotada!");
+        // Tenta reconectar pelo playerId primeiro (jogador que caiu e voltou)
+        java.util.Optional<Player> existing = java.util.Optional.empty();
+        if (playerId != null && !playerId.isBlank()) {
+            existing = room.getPlayers().stream()
+                    .filter(p -> playerId.equals(p.getId()))
+                    .findFirst();
+        }
+        if (existing.isEmpty()) {
+            existing = room.getPlayers().stream()
+                    .filter(p -> p.getName().equalsIgnoreCase(playerName))
+                    .findFirst();
         }
 
-        boolean alreadyInRoom = room.getPlayers().stream()
-                .anyMatch(p -> p.getName().equalsIgnoreCase(playerName));
-
-        if (!alreadyInRoom) {
+        if (existing.isPresent()) {
+            log.info("Reconnect/rejoin do jogador {} na sala {}", playerName, room.getId());
+        } else {
+            if (room.getPlayers().size() >= room.getMaxPlayers()) {
+                throw new RuntimeException("A sala já está lotada!");
+            }
             boolean isSpectator = "PLAYING".equals(room.getStatus()) || "FINISHED".equals(room.getStatus());
             Player newPlayer = new Player(UUID.randomUUID().toString(), playerName, !isSpectator, 0, false);
             room.addPlayer(newPlayer);
@@ -157,6 +168,7 @@ public class MatchmakingUseCase {
         newRoom.setTimeLeft(30);
         if (maxPlayers != null && maxPlayers > 0) newRoom.setMaxPlayers(maxPlayers);
         newRoom.getTargetWords().add(dictionaryPort.getRandomTargetWord());
+        newRoom.getRoundTargets().put(1, new java.util.ArrayList<>(newRoom.getTargetWords()));
 
         // mark createdAt
         newRoom.setCreatedAt(System.currentTimeMillis() / 1000L);

@@ -36,7 +36,13 @@ public class Room {
     private String status = "WAITING";
     private int timeLeft = 30;
     private int phaseDuration = 300;
+    // Morte súbita: ativada na fase final após o primeiro acerto.
+    // Demais jogadores ainda têm `graceWindowSeconds` segundos para tentar.
+    private boolean suddenDeath = false;
+    private int graceWindowSeconds = 30;
     private Map<Integer, Map<String, Integer>> roundTimes = new HashMap<>();
+    // Histórico de palavras-alvo por fase (para replay na tela de vitória)
+    private Map<Integer, List<String>> roundTargets = new HashMap<>();
 
     public void addPlayer(Player player) {
         this.players.add(player);

@@ -3,6 +3,7 @@ import { useGameSocket } from './hooks/useGameSocket';
 import { Home } from "./components/Home.tsx";
 import { Lobby } from "./components/Lobby.tsx";
 import { GameArena } from "./components/GameArena.tsx";
+import { VictoryScreen } from "./components/VictoryScreen.tsx";
 import type { LetterStatus } from "./types/game";
 
 const GlobalStyles = () => (
@@ -151,6 +152,40 @@ export default function App() {
   if (!isConnected || !room || !myPlayer) return (
       <><GlobalStyles /><div className="h-screen w-screen flex items-center justify-center bg-slate-900 text-white font-black text-2xl animate-pulse">SINCRONIZANDO...</div></>
   );
+
+  if (room.status === "FINISHED") {
+    const resetRoomState = () => {
+      setSelectedRoomId(null);
+      setSelectedRoomName(null);
+      setSelectedRoomMaxPlayers(null);
+      setSelectedRoomIsPrivate(null);
+    };
+    const handleBackToLobby = () => {
+      resetRoomState();
+      setInLobby(true);
+      window.history.replaceState({}, '', '/');
+    };
+    const handleRematch = () => {
+      // Cria uma nova sala com nome "Revanche · <original>" e mesmo limite.
+      // Os outros jogadores precisarão entrar pela nova URL (compartilhada via botão).
+      resetRoomState();
+      setSelectedRoomName(`Revanche · ${room.name}`);
+      setSelectedRoomMaxPlayers(room.maxPlayers);
+      setSelectedRoomIsPrivate(false);
+      setInLobby(false);
+      window.history.replaceState({}, '', '/');
+    };
+    return (
+        <><GlobalStyles />
+          <VictoryScreen
+              room={room}
+              meuNome={meuNome}
+              onBackToLobby={handleBackToLobby}
+              onRematch={handleRematch}
+          />
+        </>
+    );
+  }
 
   if (room.status === "WAITING") return (
       <><GlobalStyles />

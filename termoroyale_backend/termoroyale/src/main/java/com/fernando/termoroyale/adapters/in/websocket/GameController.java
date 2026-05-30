@@ -44,6 +44,7 @@ public class GameController {
         // A chamada tem que ter os parâmetros do request:
         Room room = matchmakingUseCase.joinOrCreateRoom(
                 request.playerName(),
+                request.playerId(),
                 request.roomId(),
                 request.roomName(),
                 request.maxPlayers(),
@@ -80,5 +81,5 @@ public class GameController {
     // Records
     public record GuessRequest(String roomId, String playerName, String word) {}
     public record RoomListResponse(String id, String name, int playersCount, int maxPlayers, String status) {}
-    public record JoinRequest(String playerName, String roomId, String roomName, Integer maxPlayers, Boolean isPrivate) {}
+    public record JoinRequest(String playerName, String playerId, String roomId, String roomName, Integer maxPlayers, Boolean isPrivate) {}
 }

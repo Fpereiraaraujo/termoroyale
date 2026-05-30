@@ -86,6 +86,14 @@ public class GameUseCase {
                         });
 
                 checkRoundProgression(room);
+
+                // Fase final SEMPRE encerra no timeout (mesmo sem vencedor)
+                if (room.getCurrentRound() >= 3 && !"FINISHED".equals(room.getStatus())) {
+                    log.info(">>> [TIMEOUT] Fase final encerrada por tempo.");
+                    room.setStatus("FINISHED");
+                    room.setFinished(true);
+                }
+
                 roomRepository.save(room);
                 messagingTemplate.convertAndSend("/topic/room/" + roomId, room);
             }
@@ -102,27 +110,43 @@ public class GameUseCase {
 
         if (aliveCount == 0) return;
 
-        int quota = (room.getCurrentRound() == 1) ? Math.max(1, (int) Math.ceil(aliveCount * 0.75))
-                : (room.getCurrentRound() == 2) ? Math.max(1, (int) Math.ceil(aliveCount * 0.50))
-                  : 1;
-
         List<Player> winners = alivePlayers.stream()
                 .filter(Player::isWon)
                 .sorted(Comparator.comparingInt(p -> p.getSolvedTimes().getOrDefault(room.getCurrentRound(), 9999)))
                 .collect(Collectors.toList());
 
+        // Fase FINAL: morte súbita em vez de fim imediato.
+        if (room.getCurrentRound() >= 3) {
+            if (winners.isEmpty()) return; // ninguém venceu ainda — segue jogando
+
+            if (!room.isSuddenDeath()) {
+                room.setSuddenDeath(true);
+                int grace = room.getGraceWindowSeconds() > 0 ? room.getGraceWindowSeconds() : 30;
+                if (room.getTimeLeft() > grace) {
+                    room.setTimeLeft(grace);
+                }
+                log.info(">>> [SUDDEN DEATH] Ativada na sala {} — {}s para os demais reagirem",
+                        room.getId(), room.getTimeLeft());
+            }
+
+            // Só finaliza quando todos os vivos já decidiram (todos venceram).
+            // Quem esgotou tentativas já saiu de `alivePlayers` via updatePlayerProgress.
+            if (alivePlayers.stream().allMatch(Player::isWon)) {
+                log.info(">>> [SUDDEN DEATH] Todos os vivos resolveram — encerrando partida.");
+                room.setStatus("FINISHED");
+                room.setFinished(true);
+            }
+            return;
+        }
+
+        int quota = (room.getCurrentRound() == 1) ? Math.max(1, (int) Math.ceil(aliveCount * 0.75))
+                : Math.max(1, (int) Math.ceil(aliveCount * 0.50));
+
         log.info("Vencedores atuais na rodada: {} | Quota necessária: {}", winners.size(), quota);
 
         if (winners.size() >= quota || (winners.size() == aliveCount && aliveCount > 0)) {
-            log.info(">>> [AVANÇANDO/FINALIZANDO RODADA] Condição atingida!");
-
-            if (room.getCurrentRound() >= 3) {
-                log.info("Fim de jogo! Definindo status FINISHED.");
-                room.setStatus("FINISHED");
-                room.setFinished(true);
-            } else {
-                playersElimination(room, winners, quota);
-            }
+            log.info(">>> [AVANÇANDO RODADA] Condição atingida!");
+            playersElimination(room, winners, quota);
         }
     }
 
@@ -153,7 +177,24 @@ public class GameUseCase {
         for (int i = 0; i < wordCount; i++) {
             room.getTargetWords().add(dictionaryPort.getRandomTargetWord());
         }
+        room.getRoundTargets().put(nextRound, new ArrayList<>(room.getTargetWords()));
         room.setTimeLeft(room.getPhaseDuration());
+
+        // Handicap dinâmico: ao entrar no Round 3, o líder do Round 2
+        // (menor tempo de resolução) começa com 1 tentativa a menos.
+        if (nextRound == 3) {
+            int previousRound = nextRound - 1;
+            room.getPlayers().stream()
+                    .filter(Player::isAlive)
+                    .filter(p -> p.getSolvedTimes().containsKey(previousRound))
+                    .min(Comparator.comparingInt(p -> p.getSolvedTimes().get(previousRound)))
+                    .ifPresent(leader -> {
+                        leader.setCurrentAttempts(1);
+                        log.info(">>> [HANDICAP R3] Líder da R2 ({}) começa o Round 3 com 1 tentativa a menos",
+                                leader.getName());
+                    });
+        }
+
         log.info("Sala {} avançou para Round {} com {} palavras alvo.", room.getId(), nextRound, wordCount);
     }
 }

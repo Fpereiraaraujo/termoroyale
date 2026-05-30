@@ -1,12 +1,13 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface RankingProps {
     players: any[];
     currentPlayerName: string;
     currentRound: number; // Precisamos disso para buscar o tempo da fase certa
+    phaseElapsed: number; // segundos decorridos na fase atual (em tempo real)
 }
 
-export function Ranking({ players, currentPlayerName, currentRound }: RankingProps) {
+export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed }: RankingProps) {
 
     const sortedPlayers = useMemo(() => {
         return [...players].sort((a, b) => {
@@ -29,8 +30,47 @@ export function Ranking({ players, currentPlayerName, currentRound }: RankingPro
         });
     }, [players, currentRound]);
 
+    // Flash verde quando um jogador acaba de transicionar para `won`.
+    const prevWinnersRef = useRef<Set<string>>(new Set());
+    const [flashing, setFlashing] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        const currentWinners = new Set<string>(
+            players.filter(p => p.won).map(p => p.id as string)
+        );
+        const newlyWon: string[] = [];
+        currentWinners.forEach(id => {
+            if (!prevWinnersRef.current.has(id)) newlyWon.push(id);
+        });
+        prevWinnersRef.current = currentWinners;
+
+        if (newlyWon.length === 0) return;
+        setFlashing(prev => {
+            const next = new Set(prev);
+            newlyWon.forEach(id => next.add(id));
+            return next;
+        });
+        const timer = setTimeout(() => {
+            setFlashing(prev => {
+                const next = new Set(prev);
+                newlyWon.forEach(id => next.delete(id));
+                return next;
+            });
+        }, 1800);
+        return () => clearTimeout(timer);
+    }, [players]);
+
     return (
         <div className="w-80 bg-slate-900/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex flex-col text-white">
+            <style>{`
+                @keyframes wonFlash {
+                    0%   { background-color: rgba(34, 197, 94, 0.55); box-shadow: 0 0 0 0 rgba(34,197,94,0.7); }
+                    60%  { background-color: rgba(34, 197, 94, 0.25); box-shadow: 0 0 0 14px rgba(34,197,94,0); }
+                    100% { background-color: transparent; box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+                }
+                .won-flash { animation: wonFlash 1.8s ease-out; }
+            `}</style>
+
             <div className="p-6 border-b border-white/10 bg-slate-800/50">
                 <h3 className="text-2xl font-black tracking-widest uppercase flex items-center gap-3">
                     <span className="w-2 h-8 bg-sky-500 rounded-full"></span>
@@ -43,16 +83,39 @@ export function Ranking({ players, currentPlayerName, currentRound }: RankingPro
                     const isMe = player.name.toLowerCase() === currentPlayerName.toLowerCase();
                     const rankClass = index === 0 ? "text-yellow-400" : index === 1 ? "text-slate-300" : index === 2 ? "text-amber-600" : "text-slate-500";
                     const solveTime = player.solvedTimes?.[currentRound];
+                    const isFlashing = flashing.has(player.id);
+
+                    // Tempo a exibir: se ganhou usa solveTime; se ainda joga e está vivo, mostra
+                    // o elapsed em tempo real da fase. Se saiu, mostra o último tempo conhecido.
+                    const liveSeconds = player.won
+                        ? solveTime
+                        : player.isAlive
+                            ? phaseElapsed
+                            : undefined;
 
                     return (
-                        <div key={player.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${isMe ? 'bg-sky-500/20 border-sky-500/50' : 'bg-slate-800/50 border-white/5'}`}>
+                        <div
+                            key={player.id}
+                            className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                                isMe ? 'bg-sky-500/20 border-sky-500/50' : 'bg-slate-800/50 border-white/5'
+                            } ${isFlashing ? 'won-flash' : ''}`}
+                        >
                             <div className="flex items-center gap-4">
                                 <span className={`text-2xl font-black ${rankClass}`}>#{index + 1}</span>
                                 <div className="flex flex-col">
                                     <span className="font-bold text-lg truncate w-28 uppercase">
                                         {player.name}
                                     </span>
-                                    {isMe && <span className="text-[10px] text-sky-400 font-black tracking-widest uppercase">Você</span>}
+                                    <div className="flex items-center gap-1.5">
+                                        {isMe && <span className="text-[10px] text-sky-400 font-black tracking-widest uppercase">Você</span>}
+                                        {liveSeconds !== undefined && (
+                                            <span className={`text-[10px] font-black tracking-widest uppercase ${
+                                                player.won ? 'text-green-400' : 'text-slate-400'
+                                            }`}>
+                                                {liveSeconds}s
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
