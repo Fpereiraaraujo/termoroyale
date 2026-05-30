@@ -38,7 +38,7 @@ export function GameArena({
             if (event.ctrlKey || event.metaKey || event.altKey) return;
             const key = event.key.toUpperCase();
 
-            // Bloqueia comandos se o jogador não estiver vivo ou já tiver ganho o round
+            // Bloqueia se o jogador estiver morto ou se já ganhou a rodada (aguardando)
             if (!myPlayer?.isAlive || myPlayer?.won) return;
 
             if (key === "ENTER" || key === "BACKSPACE" || key === "DELETE" || key === "ARROWLEFT" || key === "ARROWRIGHT") {
@@ -72,15 +72,14 @@ export function GameArena({
                 />
 
                 <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
-                    {/* Mensagem de Espera (Vencedor do Round) */}
+                    {/* Mensagem de Espera (Aparece quando won é true) */}
                     {myPlayer?.won && (
                         <div className="absolute top-10 z-50 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-2xl font-black uppercase shadow-2xl border-4 border-white animate-bounce text-center">
-                            <h3 className="text-2xl">Rodada Concluída!</h3>
+                            <h3 className="text-2xl">Você Acertou!</h3>
                             <p className="text-sm opacity-90">Aguardando a cota de classificados...</p>
                         </div>
                     )}
 
-                    {/* Tela de Eliminado */}
                     {!myPlayer?.isAlive ? (
                         <div className="flex flex-col items-center justify-center p-12 bg-slate-900/90 backdrop-blur-xl rounded-[3rem] border-4 border-slate-700 shadow-2xl text-white">
                             <div className="text-8xl mb-6">👻</div>
@@ -88,7 +87,6 @@ export function GameArena({
                             <p className="text-slate-400 mt-4 font-bold text-xl">Continue assistindo pelo ranking.</p>
                         </div>
                     ) : (
-                        // Game Board
                         <div className="w-full flex justify-center">
                             <Board
                                 title={room.name}
@@ -103,7 +101,6 @@ export function GameArena({
                     )}
                 </div>
 
-                {/* Keyboard (Só aparece se estiver vivo e não tiver ganhado o round) */}
                 {myPlayer?.isAlive && !myPlayer?.won && (
                     <div className="w-full flex justify-center pb-6">
                         <Keyboard onKeyPress={handleKeyPress} keyStatuses={keyStatuses} />
@@ -111,7 +108,12 @@ export function GameArena({
                 )}
             </div>
 
-            <Ranking players={room.players} currentPlayerName={meuNome} />
+            {/* Passamos o currentRound para o Ranking conseguir ordenar pelo tempo da fase atual */}
+            <Ranking
+                players={room.players}
+                currentPlayerName={meuNome}
+                currentRound={room.currentRound}
+            />
         </div>
     );
 }
