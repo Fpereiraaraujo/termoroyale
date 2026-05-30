@@ -3,6 +3,15 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import type { Room } from '../types/game';
 
+export interface ReactionEvent {
+    id: number;
+    emoji: string;
+    playerName: string;
+    x: number;
+}
+
+let reactionCounter = 1;
+
 const PLAYER_ID_KEY = (roomId: string, playerName: string) =>
     `termoroyale.playerId.${roomId}.${playerName.toLowerCase()}`;
 
@@ -25,6 +34,7 @@ export function useGameSocket(
 ) {
     const [room, setRoom] = useState<Room | null>(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [reactions, setReactions] = useState<ReactionEvent[]>([]);
     const stompClient = useRef<Client | null>(null);
     const subscribedRoomId = useRef<string | null>(null);
 
@@ -54,6 +64,15 @@ export function useGameSocket(
                     if (subscribedRoomId.current !== initialRoom.id) {
                         client.subscribe(`/topic/room/${initialRoom.id}`, (roomMsg) => {
                             setRoom(JSON.parse(roomMsg.body));
+                        });
+                        client.subscribe(`/topic/room/${initialRoom.id}/reactions`, (reactionMsg) => {
+                            const data = JSON.parse(reactionMsg.body);
+                            setReactions(prev => [...prev, {
+                                id: reactionCounter++,
+                                emoji: data.emoji,
+                                playerName: data.playerName,
+                                x: 10 + Math.random() * 80,
+                            }]);
                         });
                         subscribedRoomId.current = initialRoom.id;
                     }
@@ -104,5 +123,29 @@ export function useGameSocket(
         }
     };
 
-    return { room, isConnected, sendGuess };
+    const requestRematch = (originalRoomId: string) => {
+        if (!stompClient.current?.connected) return;
+        stompClient.current.publish({
+            destination: '/app/rematch',
+            body: JSON.stringify({
+                originalRoomId,
+                playerName,
+                playerId: loadPlayerId(originalRoomId, playerName),
+            })
+        });
+    };
+
+    const sendReaction = (emoji: string) => {
+        if (!stompClient.current?.connected || !room) return;
+        stompClient.current.publish({
+            destination: '/app/reaction',
+            body: JSON.stringify({ roomId: room.id, playerName, emoji })
+        });
+    };
+
+    const expireReaction = (id: number) => {
+        setReactions(prev => prev.filter(r => r.id !== id));
+    };
+
+    return { room, isConnected, sendGuess, requestRematch, reactions, sendReaction, expireReaction };
 }

@@ -45,7 +45,7 @@ export function WinnerHeader({ winnerName, euVenci, hasWinner }: WinnerHeaderPro
                 </p>
             )}
             {!euVenci && hasWinner && (
-                <p className="mt-2 text-base font-bold uppercase tracking-widest text-slate-400">
+                <p className="mt-2 text-base font-bold uppercase tracking-widest text-slate-500">
                     Parabéns ao campeão da arena
                 </p>
             )}

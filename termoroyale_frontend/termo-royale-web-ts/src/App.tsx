@@ -37,7 +37,7 @@ export default function App() {
   const [currentGuess, setCurrentGuess] = useState<string[]>(Array(5).fill(""));
   const [activeCol, setActiveCol] = useState(0);
 
-    const { room, isConnected, sendGuess } = useGameSocket(
+    const { room, isConnected, sendGuess, requestRematch, reactions, sendReaction, expireReaction } = useGameSocket(
       meuNome,
       selectedRoomId,
       selectedRoomName,
@@ -166,14 +166,10 @@ export default function App() {
       window.history.replaceState({}, '', '/');
     };
     const handleRematch = () => {
-      // Cria uma nova sala com nome "Revanche · <original>" e mesmo limite.
-      // Os outros jogadores precisarão entrar pela nova URL (compartilhada via botão).
-      resetRoomState();
-      setSelectedRoomName(`Revanche · ${room.name}`);
-      setSelectedRoomMaxPlayers(room.maxPlayers);
-      setSelectedRoomIsPrivate(false);
-      setInLobby(false);
-      window.history.replaceState({}, '', '/');
+      // Pede ao backend para criar (uma vez) ou recuperar a sala de revanche
+      // dessa sala original. O backend devolve via /user/queue/room a nova sala
+      // já com o jogador dentro, e o hook substitui `room` automaticamente.
+      requestRematch(room.id);
     };
     return (
         <><GlobalStyles />
@@ -230,6 +226,9 @@ export default function App() {
             handleKeyPress={handleKeyPress}
             keyStatuses={keyStatuses}
             meuNome={meuNome}
+            reactions={reactions}
+            sendReaction={sendReaction}
+            expireReaction={expireReaction}
         /></>
   );
 }

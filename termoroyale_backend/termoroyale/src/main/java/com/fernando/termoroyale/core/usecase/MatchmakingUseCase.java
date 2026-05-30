@@ -151,6 +151,43 @@ public class MatchmakingUseCase {
         return roomRepository.findAll();
     }
 
+    /**
+     * Cria (uma vez) ou recupera a sala de revanche derivada de uma sala finalizada
+     * e insere o jogador chamador nela. O id da sala-revanche fica gravado na sala
+     * original, então todos os outros jogadores que clicarem em Revanche caem na
+     * mesma sala.
+     */
+    public Room requestRematch(String originalRoomId, String playerName, String playerId) {
+        Lock lock = lockRegistry.lockFor(originalRoomId);
+        lock.lock();
+        String rematchRoomId;
+        try {
+            Room original = roomRepository.findById(originalRoomId)
+                    .orElseThrow(() -> new RuntimeException("Sala original não encontrada: " + originalRoomId));
+
+            rematchRoomId = original.getRematchRoomId();
+            boolean rematchExists = rematchRoomId != null
+                    && roomRepository.findById(rematchRoomId).isPresent();
+
+            if (!rematchExists) {
+                String baseName = original.getName() != null ? original.getName() : "Arena";
+                String rematchName = baseName.startsWith("Revanche · ") ? baseName : "Revanche · " + baseName;
+                Room rematch = createNewRoom(null, rematchName, original.getMaxPlayers(), false);
+                Room savedRematch = roomRepository.save(rematch);
+                rematchRoomId = savedRematch.getId();
+                original.setRematchRoomId(rematchRoomId);
+                roomRepository.save(original);
+                startRoomTimer(rematchRoomId);
+                log.info("Sala de revanche {} criada a partir de {}", rematchRoomId, originalRoomId);
+                // Avisa todos os jogadores ainda assistindo a sala original
+                messagingTemplate.convertAndSend("/topic/room/" + originalRoomId, original);
+            }
+        } finally {
+            lock.unlock();
+        }
+        return joinOrCreateRoom(playerName, playerId, rematchRoomId, null, null, null);
+    }
+
     private Room createNewRoom(String customId, String roomName, Integer maxPlayers, boolean isPrivate) {
         Room newRoom = new Room();
         if (customId != null) {

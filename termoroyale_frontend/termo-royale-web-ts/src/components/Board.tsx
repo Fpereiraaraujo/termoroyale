@@ -1,4 +1,4 @@
-import { Tile } from "./Tile.tsx";
+import { Tile, type TileSize } from "./Tile.tsx";
 import type { LetterStatus } from "../types/game";
 
 interface BoardProps {
@@ -22,16 +22,22 @@ export function Board({
 }: BoardProps) {
 
     const rows = Array(6).fill(null);
+    const gridCount = targetWords.length;
+    // Termo (1) = grande, Duo (2) = médio, Quarteto (3-4+) = pequeno
+    const tileSize: TileSize = gridCount >= 3 ? "sm" : gridCount === 2 ? "md" : "lg";
+    const outerGap = gridCount >= 3 ? "gap-2" : "gap-3";
+    const innerPad = gridCount >= 3 ? "p-1.5" : "p-2";
+    const rowGap = gridCount >= 3 ? "gap-0.5 mb-0.5" : "gap-1 mb-1";
 
     return (
-        <div className="flex flex-col items-center gap-3 p-4 bg-slate-100/90 backdrop-blur-md rounded-2xl shadow-xl border border-white">
-            <h3 className="text-slate-700 font-black text-center tracking-widest text-xl uppercase">
+        <div className="flex flex-col items-center gap-2 p-3 bg-slate-100/90 backdrop-blur-md rounded-2xl shadow-xl border border-white">
+            <h3 className="text-slate-700 font-black text-center tracking-widest text-base uppercase">
                 {title}
             </h3>
 
             <div
-                className={`grid gap-3 ${
-                    targetWords.length > 1
+                className={`grid ${outerGap} ${
+                    gridCount > 1
                         ? "grid-cols-2"
                         : "grid-cols-1"
                 }`}
@@ -50,7 +56,7 @@ export function Board({
                         <div
                             key={gridIndex}
                             className={`
-                                p-2
+                                ${innerPad}
                                 rounded-xl
                                 relative
                                 transition-all
@@ -85,7 +91,7 @@ export function Board({
                                 return (
                                     <div
                                         key={rowIndex}
-                                        className="flex gap-1 mb-1"
+                                        className={`flex ${rowGap}`}
                                     >
                                         {Array(5)
                                             .fill(null)
@@ -132,6 +138,7 @@ export function Board({
                                                         status={status}
                                                         isActive={isActive}
                                                         animationDelay={delay}
+                                                        size={tileSize}
                                                         onClick={() => {
                                                             if (
                                                                 isCurrentRow &&

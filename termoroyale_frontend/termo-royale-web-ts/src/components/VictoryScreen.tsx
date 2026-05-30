@@ -59,7 +59,7 @@ export function VictoryScreen({ room, meuNome, onBackToLobby, onRematch }: Victo
             >
                 <Confetti />
 
-                <div className="relative w-full max-w-3xl bg-slate-900/95 backdrop-blur-xl rounded-[2.5rem] border-4 border-yellow-400 shadow-[0_0_60px_rgba(250,204,21,0.35)] p-8 md:p-12 flex flex-col items-center text-white">
+                <div className="relative w-full max-w-3xl bg-white rounded-[2.5rem] border-4 border-yellow-400 shadow-[0_0_60px_rgba(250,204,21,0.35)] p-8 md:p-12 flex flex-col items-center text-slate-800">
                     <WinnerHeader
                         winnerName={winner?.name}
                         euVenci={euVenci}
@@ -77,7 +77,7 @@ export function VictoryScreen({ room, meuNome, onBackToLobby, onRematch }: Victo
                         onBackToLobby={onBackToLobby}
                     />
 
-                    <p className="mt-6 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                    <p className="mt-6 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                         Sala #{room.id} · {room.players.length} competidores
                     </p>
                 </div>

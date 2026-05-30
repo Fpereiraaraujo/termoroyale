@@ -27,4 +27,5 @@ export interface Room {
     roundTargets?: Record<number, string[]>;
     suddenDeath?: boolean;
     graceWindowSeconds?: number;
+    rematchRoomId?: string;
 }

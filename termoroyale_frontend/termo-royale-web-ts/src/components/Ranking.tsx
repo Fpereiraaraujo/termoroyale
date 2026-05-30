@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { avatarFor } from "../utils/avatar";
 
 interface RankingProps {
     players: any[];
@@ -100,10 +101,18 @@ export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed
                                 isMe ? 'bg-sky-500/20 border-sky-500/50' : 'bg-slate-800/50 border-white/5'
                             } ${isFlashing ? 'won-flash' : ''}`}
                         >
-                            <div className="flex items-center gap-4">
-                                <span className={`text-2xl font-black ${rankClass}`}>#{index + 1}</span>
+                            <div className="flex items-center gap-3">
+                                <span className={`text-2xl font-black w-6 text-center ${rankClass}`}>#{index + 1}</span>
+                                {(() => {
+                                    const av = avatarFor(player.name);
+                                    return (
+                                        <div className={`w-10 h-10 rounded-full ${av.bg} flex items-center justify-center text-white font-black text-xs shrink-0 ring-2 ${av.ring} shadow-md`}>
+                                            {av.initials}
+                                        </div>
+                                    );
+                                })()}
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-lg truncate w-28 uppercase">
+                                    <span className="font-bold text-base truncate w-24 uppercase">
                                         {player.name}
                                     </span>
                                     <div className="flex items-center gap-1.5">

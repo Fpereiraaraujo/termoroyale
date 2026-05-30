@@ -22,7 +22,7 @@ export function ActionButtons({ shareText, onRematch, onBackToLobby }: ActionBut
         <div className="mt-8 flex flex-col sm:flex-row gap-3 w-full max-w-md">
             <button
                 onClick={handleShare}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 border-2 border-slate-700 text-white font-black uppercase tracking-widest py-3 rounded-2xl transition-all active:scale-95"
+                className="flex-1 bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 text-slate-700 font-black uppercase tracking-widest py-3 rounded-2xl transition-all active:scale-95"
             >
                 {copied ? "✓ Copiado!" : "Compartilhar"}
             </button>

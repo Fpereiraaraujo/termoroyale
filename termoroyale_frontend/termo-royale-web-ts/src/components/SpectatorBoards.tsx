@@ -8,10 +8,10 @@ interface SpectatorBoardsProps {
 }
 
 const COLOR: Record<string, string> = {
-    CORRECT: "bg-green-500 text-white border-green-700",
-    PRESENT: "bg-yellow-500 text-white border-yellow-700",
-    ABSENT: "bg-slate-700 text-slate-300 border-slate-800",
-    EMPTY: "bg-slate-800/60 text-transparent border-slate-700",
+    CORRECT: "bg-green-500 text-white border-green-600",
+    PRESENT: "bg-yellow-500 text-white border-yellow-600",
+    ABSENT: "bg-slate-400 text-white border-slate-500",
+    EMPTY: "bg-slate-100 text-transparent border-slate-200",
 };
 
 function MiniGrid({
@@ -63,16 +63,16 @@ function SpectatorPlayerCard({
     return (
         <div className={`rounded-2xl p-3 border-2 ${
             player.won
-                ? "bg-green-900/40 border-green-500"
+                ? "bg-green-50 border-green-400"
                 : player.isAlive
-                    ? "bg-slate-900/80 border-slate-700"
-                    : "bg-red-900/30 border-red-700 opacity-60"
-        } flex flex-col gap-2 min-w-0`}>
+                    ? "bg-white border-slate-200"
+                    : "bg-red-50 border-red-300 opacity-60"
+        } flex flex-col gap-2 min-w-0 shadow-sm`}>
             <div className="flex items-center justify-between gap-2">
-                <span className="font-black uppercase tracking-wide text-white text-sm truncate">
+                <span className="font-black uppercase tracking-wide text-slate-800 text-sm truncate">
                     {player.name}
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 shrink-0">
                     {player.currentAttempts}/{maxAttempts}
                 </span>
             </div>
@@ -106,7 +106,7 @@ function SpectatorPlayerCard({
             )}
 
             {player.won && (
-                <span className="text-[10px] font-black uppercase tracking-widest text-green-300 text-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-green-600 text-center">
                     🏆 Resolveu
                 </span>
             )}
@@ -126,31 +126,31 @@ export function SpectatorBoards({
 
     if (others.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-slate-900/90 backdrop-blur-xl rounded-[3rem] border-4 border-slate-700 shadow-2xl text-white">
+            <div className="flex flex-col items-center justify-center p-12 bg-white rounded-4xl border-2 border-slate-200 shadow-xl text-slate-700">
                 <div className="text-7xl mb-4">👻</div>
-                <h2 className="text-3xl font-black uppercase tracking-widest text-slate-300">
+                <h2 className="text-3xl font-black uppercase tracking-widest text-slate-700">
                     Eliminado
                 </h2>
-                <p className="text-slate-400 mt-2 font-bold text-base">Aguardando próxima sala.</p>
+                <p className="text-slate-500 mt-2 font-bold text-base">Aguardando próxima sala.</p>
             </div>
         );
     }
 
     return (
-        <div className="w-full max-w-4xl flex flex-col gap-4 px-4 py-6 bg-slate-900/90 backdrop-blur-xl rounded-[2rem] border-4 border-slate-700 shadow-2xl">
+        <div className="w-full max-w-4xl flex flex-col gap-4 px-4 py-6 bg-white rounded-4xl border-2 border-slate-200 shadow-xl">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <span className="text-4xl">👻</span>
                     <div>
-                        <h2 className="text-2xl font-black uppercase tracking-widest text-slate-200">
+                        <h2 className="text-2xl font-black uppercase tracking-widest text-slate-800">
                             Modo Espectador
                         </h2>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                        <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
                             Você foi eliminado — acompanhe quem ainda está na disputa
                         </p>
                     </div>
                 </div>
-                <span className="bg-slate-800 text-yellow-400 font-black px-3 py-1.5 rounded-full text-xs uppercase tracking-widest border border-yellow-400/30">
+                <span className="bg-slate-900 text-yellow-400 font-black px-3 py-1.5 rounded-full text-xs uppercase tracking-widest border border-slate-900">
                     {others.length} {others.length === 1 ? "vivo" : "vivos"}
                 </span>
             </div>

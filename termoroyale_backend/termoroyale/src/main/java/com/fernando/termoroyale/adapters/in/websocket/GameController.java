@@ -78,8 +78,43 @@ public class GameController {
         }
     }
 
+    @MessageMapping("/rematch")
+    public void handleRematch(@Payload RematchRequest request) {
+        try {
+            Room rematchRoom = matchmakingUseCase.requestRematch(
+                    request.originalRoomId(),
+                    request.playerName(),
+                    request.playerId()
+            );
+            messagingTemplate.convertAndSendToUser(request.playerName(), "/queue/room", rematchRoom);
+            messagingTemplate.convertAndSend("/topic/room/" + rematchRoom.getId(), rematchRoom);
+        } catch (Exception e) {
+            log.error("Erro ao processar revanche da sala {}: {}", request.originalRoomId(), e.getMessage());
+            messagingTemplate.convertAndSendToUser(
+                    request.playerName(),
+                    "/queue/errors",
+                    Map.of("message", e.getMessage() != null ? e.getMessage() : "Erro ao iniciar revanche", "type", "REMATCH_ERROR")
+            );
+        }
+    }
+
+    @MessageMapping("/reaction")
+    public void handleReaction(@Payload ReactionRequest request) {
+        if (request.emoji() == null || request.emoji().length() > 8) return;
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + request.roomId() + "/reactions",
+                Map.of(
+                        "emoji", request.emoji(),
+                        "playerName", request.playerName(),
+                        "timestamp", System.currentTimeMillis()
+                )
+        );
+    }
+
     // Records
     public record GuessRequest(String roomId, String playerName, String word) {}
     public record RoomListResponse(String id, String name, int playersCount, int maxPlayers, String status) {}
     public record JoinRequest(String playerName, String playerId, String roomId, String roomName, Integer maxPlayers, Boolean isPrivate) {}
+    public record RematchRequest(String originalRoomId, String playerName, String playerId) {}
+    public record ReactionRequest(String roomId, String playerName, String emoji) {}
 }

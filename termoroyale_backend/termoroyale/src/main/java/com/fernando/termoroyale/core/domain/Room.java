@@ -43,6 +43,10 @@ public class Room {
     private Map<Integer, Map<String, Integer>> roundTimes = new HashMap<>();
     // Histórico de palavras-alvo por fase (para replay na tela de vitória)
     private Map<Integer, List<String>> roundTargets = new HashMap<>();
+    // Id da sala de revanche criada a partir desta. Compartilhado entre todos
+    // os jogadores da sala original para que cliquem em Revanche e caiam
+    // na mesma sala nova.
+    private String rematchRoomId;
 
     public void addPlayer(Player player) {
         this.players.add(player);
