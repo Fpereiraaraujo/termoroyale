@@ -6,7 +6,6 @@ import { GameArena } from "./components/GameArena.tsx";
 import { VictoryScreen } from "./components/VictoryScreen.tsx";
 import { ConnectionBadge } from "./components/ConnectionBadge.tsx";
 import { sound } from "./utils/sound";
-import { recordResult } from "./utils/playerStats";
 import { useI18n } from "./i18n";
 import type { LetterStatus } from "./types/game";
 
@@ -112,7 +111,6 @@ export default function App() {
         sendGuess(word);
       }
     } else if (k === 'DELETE' || k === 'BACKSPACE') {
-      sound.key();
       setCurrentGuess(prev => {
         const newGuess = [...prev];
         if (newGuess[activeCol] !== "") {
@@ -124,7 +122,6 @@ export default function App() {
         return newGuess;
       });
     } else if (/^[A-Z]$/.test(k)) {
-      sound.key();
       setCurrentGuess(prev => {
         const newGuess = [...prev];
         newGuess[activeCol] = k;
@@ -173,10 +170,7 @@ export default function App() {
   useEffect(() => {
     if (room?.status === "FINISHED" && finishedHandledRef.current !== room.id) {
       finishedHandledRef.current = room.id;
-      const won = Boolean(myPlayer?.won);
-      const totalTime = (myPlayer as any)?.totalSolveTime;
-      recordResult(won, typeof totalTime === "number" ? totalTime : undefined);
-      if (won) sound.win();
+      if (myPlayer?.won) sound.win();
     }
     if (room?.status === "PLAYING") finishedHandledRef.current = null;
   }, [room?.status, room?.id, myPlayer]);

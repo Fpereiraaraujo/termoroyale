@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { PlayerStatsBadge } from "./PlayerStatsBadge";
 import { useI18n, LanguageSwitcher } from "../i18n";
 
 interface HomeProps {
@@ -57,8 +56,6 @@ export function Home({ onJoin }: HomeProps) {
                     </button>
                 </form>
             </div>
-
-            <PlayerStatsBadge />
         </div>
     );
 }

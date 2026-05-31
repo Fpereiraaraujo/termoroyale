@@ -85,7 +85,7 @@ export function Scoreboard({
             {/* Cronômetro estilo LED (direita) */}
             <div className="flex items-center gap-2 justify-self-end">
                 <button
-                    onClick={() => { sound.key(); setRulesOpen(true); }}
+                    onClick={() => setRulesOpen(true)}
                     className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border-2 border-slate-600 text-yellow-400 font-black text-base shadow-inner"
                     title={t("scoreboard.howToPlay")}
                 >?</button>
