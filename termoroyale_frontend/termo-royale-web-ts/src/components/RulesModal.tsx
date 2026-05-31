@@ -65,7 +65,7 @@ function Rule({ icon, title, children }: { icon: string; title: string; children
         <div className="flex gap-3 bg-slate-800/60 border border-slate-700 rounded-xl p-3">
             <span className="text-xl shrink-0">{icon}</span>
             <div className="min-w-0">
-                <div className="font-black uppercase tracking-widest text-xs text-yellow-400 mb-0.5">{title}</div>
+                <div className="font-black uppercase tracking-widest text-xs text-amber-400 mb-0.5">{title}</div>
                 <div className="text-slate-200 leading-snug">{children}</div>
             </div>
         </div>

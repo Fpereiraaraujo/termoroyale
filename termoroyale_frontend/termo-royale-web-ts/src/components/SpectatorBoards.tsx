@@ -59,8 +59,6 @@ function SpectatorPlayerCard({
     maxAttempts: number;
 }) {
     const { t } = useI18n();
-    const lastGuess = player.guesses[player.guesses.length - 1];
-    const lastResults = player.results[player.results.length - 1];
 
     return (
         <div className={`rounded-2xl p-3 border-2 ${
@@ -89,23 +87,6 @@ function SpectatorPlayerCard({
                     />
                 ))}
             </div>
-
-            {lastGuess && (
-                <div className="flex gap-0.5 justify-center mt-1">
-                    {lastGuess.split("").map((letter, i) => {
-                        const status = (lastResults?.[0]?.[i] as string) ?? "EMPTY";
-                        const cls = COLOR[status] ?? COLOR.EMPTY;
-                        return (
-                            <span
-                                key={i}
-                                className={`w-5 h-5 flex items-center justify-center text-[10px] font-black uppercase rounded ${cls}`}
-                            >
-                                {letter}
-                            </span>
-                        );
-                    })}
-                </div>
-            )}
 
             {player.won && (
                 <span className="text-[10px] font-black uppercase tracking-widest text-green-600 text-center">

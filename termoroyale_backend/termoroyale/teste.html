@@ -37,7 +37,7 @@
     function entrarNaFila() {
         if(stompClient !== null) {
             // Envia a mensagem para a rota @MessageMapping("/join")
-            stompClient.send("/app/join", {}, JSON.stringify({'playerName': 'Fernando_Dev'}));
+            stompClient.send("/app/join", {}, JSON.stringify({'playerName': 'Milton'}));
             document.getElementById('status').innerText = 'Mensagem Enviada! Olhe o console do IntelliJ/Eclipse.';
         } else {
             alert("Conecte primeiro!");

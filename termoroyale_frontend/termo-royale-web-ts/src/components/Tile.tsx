@@ -40,13 +40,13 @@ export function Tile({
             "bg-white border-slate-400 border-2 text-slate-800 shadow-sm";
     } else if (status === "CORRECT") {
         bgClass =
-            "bg-green-500 border-green-600 text-white shadow-md";
+            "bg-emerald-500 border-emerald-600 text-white shadow-md";
     } else if (status === "PRESENT") {
         bgClass =
-            "bg-yellow-500 border-yellow-600 text-white shadow-md";
+            "bg-amber-500 border-amber-600 text-white shadow-md";
     } else if (status === "ABSENT") {
         bgClass =
-            "bg-slate-600 border-slate-700 text-white shadow-inner";
+            "bg-slate-500 border-slate-600 text-white shadow-inner";
     }
 
     const activeRing = isActive

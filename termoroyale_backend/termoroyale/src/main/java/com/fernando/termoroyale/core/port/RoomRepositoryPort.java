@@ -10,4 +10,5 @@ public interface RoomRepositoryPort {
     Optional<Room> findById(String id);
     Optional<Room> findAvailableRoom();
     List<Room> findAll();
+    long countActive();
 }

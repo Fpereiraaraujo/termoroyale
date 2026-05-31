@@ -30,6 +30,8 @@ export function useGameSocket(
     selectedRoomName: string | null,
     selectedRoomMaxPlayers: number | null,
     selectedRoomIsPrivate: boolean | null,
+    selectedRoomTheme: string | null,
+    selectedRoomGameMode: string | null,
     shouldConnect: boolean
 ) {
     const [room, setRoom] = useState<Room | null>(null);
@@ -37,6 +39,7 @@ export function useGameSocket(
     const [reactions, setReactions] = useState<ReactionEvent[]>([]);
     const [lastErrorAt, setLastErrorAt] = useState<number>(0);
     const [lastErrorMessage, setLastErrorMessage] = useState<string>("");
+    const [lastHint, setLastHint] = useState<{ position: number; letter: string; remainingAttempts: number; ts: number } | null>(null);
     const stompClient = useRef<Client | null>(null);
     const subscribedRoomId = useRef<string | null>(null);
 
@@ -57,6 +60,18 @@ export function useGameSocket(
                         setLastErrorMessage(data?.message ?? "Erro");
                     } catch { setLastErrorMessage("Erro"); }
                     setLastErrorAt(Date.now());
+                });
+
+                client.subscribe('/user/queue/hint', (msg) => {
+                    try {
+                        const data = JSON.parse(msg.body);
+                        setLastHint({
+                            position: data.position,
+                            letter: data.letter,
+                            remainingAttempts: data.remainingAttempts,
+                            ts: Date.now(),
+                        });
+                    } catch { /* ignore */ }
                 });
 
                 client.subscribe('/user/queue/room', (message) => {
@@ -98,7 +113,9 @@ export function useGameSocket(
                         roomId: selectedRoomId,
                         roomName: selectedRoomName,
                         maxPlayers: selectedRoomMaxPlayers,
-                        isPrivate: selectedRoomIsPrivate
+                        isPrivate: selectedRoomIsPrivate,
+                        theme: selectedRoomTheme,
+                        gameMode: selectedRoomGameMode
                     })
                 });
             },
@@ -153,9 +170,17 @@ export function useGameSocket(
         });
     };
 
+    const sendHint = () => {
+        if (!stompClient.current?.connected || !room) return;
+        stompClient.current.publish({
+            destination: '/app/hint',
+            body: JSON.stringify({ roomId: room.id, playerName })
+        });
+    };
+
     const expireReaction = (id: number) => {
         setReactions(prev => prev.filter(r => r.id !== id));
     };
 
-    return { room, isConnected, sendGuess, requestRematch, reactions, sendReaction, expireReaction, lastErrorAt, lastErrorMessage };
+    return { room, isConnected, sendGuess, requestRematch, reactions, sendReaction, expireReaction, lastErrorAt, lastErrorMessage, sendHint, lastHint };
 }

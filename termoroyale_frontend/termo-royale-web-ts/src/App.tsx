@@ -5,6 +5,9 @@ import { Lobby } from "./components/Lobby.tsx";
 import { GameArena } from "./components/GameArena.tsx";
 import { VictoryScreen } from "./components/VictoryScreen.tsx";
 import { ConnectionBadge } from "./components/ConnectionBadge.tsx";
+import { PracticeMode } from "./components/PracticeMode.tsx";
+import { DailyChallenge } from "./components/DailyChallenge.tsx";
+import { Spectate } from "./components/Spectate.tsx";
 import { sound } from "./utils/sound";
 import { useI18n } from "./i18n";
 import type { LetterStatus } from "./types/game";
@@ -34,6 +37,29 @@ const GlobalStyles = () => (
         60% { transform: translateY(-4px); }
     }
     .animate-bounce-row { animation: bounceRow 0.6s ease-out 0.6s both; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .animate-fade-in { animation: fadeIn 0.25s ease-out both; }
+
+    @keyframes countdownPop {
+        0% { transform: scale(0.4); opacity: 0; }
+        40% { transform: scale(1.15); opacity: 1; }
+        80% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0.95); opacity: 0.85; }
+    }
+    .animate-countdown { animation: countdownPop 1s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+    @keyframes quaseIn {
+        0% { transform: translateY(-40px) scale(0.7); opacity: 0; }
+        20% { transform: translateY(0) scale(1.08); opacity: 1; }
+        40% { transform: translateY(0) scale(1); }
+        80% { transform: translateY(0) scale(1); opacity: 1; }
+        100% { transform: translateY(-20px) scale(0.95); opacity: 0; }
+    }
+    .animate-quase { animation: quaseIn 2.8s ease-out both; }
   `}</style>
 );
 
@@ -42,7 +68,25 @@ export default function App() {
   const [inLobby, setInLobby] = useState(false);
   const { t } = useI18n();
 
-  // LÊ A URL INICIALMENTE: Se tiver /room/ID, já salva o ID
+  // ---- Roteamento simples baseado em path ----
+  type Mode = "multi" | "practice" | "daily" | "spectate";
+  const [mode, setMode] = useState<Mode>(() => {
+    const p = window.location.pathname;
+    if (p.startsWith("/practice")) return "practice";
+    if (p.startsWith("/daily")) return "daily";
+    if (p.startsWith("/spectate/")) return "spectate";
+    return "multi";
+  });
+  const [spectateRoomId, setSpectateRoomId] = useState<string | null>(() => {
+    const p = window.location.pathname;
+    return p.startsWith("/spectate/") ? p.replace("/spectate/", "") : null;
+  });
+
+  const goMulti = () => { setMode("multi"); window.history.replaceState({}, "", "/"); };
+  const goPractice = () => { setMode("practice"); window.history.replaceState({}, "", "/practice"); };
+  const goDaily = () => { setMode("daily"); window.history.replaceState({}, "", "/daily"); };
+
+  // LE A URL INICIALMENTE: Se tiver /room/ID, já salva o ID
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(() => {
     const path = window.location.pathname;
     if (path.startsWith('/room/')) return path.replace('/room/', '');
@@ -52,16 +96,20 @@ export default function App() {
   const [selectedRoomName, setSelectedRoomName] = useState<string | null>(null);
   const [selectedRoomMaxPlayers, setSelectedRoomMaxPlayers] = useState<number | null>(null);
   const [selectedRoomIsPrivate, setSelectedRoomIsPrivate] = useState<boolean | null>(null);
+  const [selectedRoomTheme, setSelectedRoomTheme] = useState<string | null>(null);
+  const [selectedRoomGameMode, setSelectedRoomGameMode] = useState<string | null>(null);
   const [currentGuess, setCurrentGuess] = useState<string[]>(Array(5).fill(""));
   const [activeCol, setActiveCol] = useState(0);
 
-    const { room, isConnected, sendGuess, requestRematch, reactions, sendReaction, expireReaction, lastErrorAt } = useGameSocket(
+    const { room, isConnected, sendGuess, requestRematch, reactions, sendReaction, expireReaction, lastErrorAt, sendHint, lastHint } = useGameSocket(
       meuNome,
       selectedRoomId,
       selectedRoomName,
       selectedRoomMaxPlayers,
       selectedRoomIsPrivate,
-      (Boolean(meuNome) && !inLobby)
+      selectedRoomTheme,
+      selectedRoomGameMode,
+      (mode === "multi" && Boolean(meuNome) && !inLobby)
     );
 
   // ATUALIZA A URL NO NAVEGADOR AUTOMATICAMENTE
@@ -188,12 +236,38 @@ export default function App() {
 
   // SE NÃO TEM NOME, PEDE O NOME.
   // Se a pessoa entrou pelo link (selectedRoomId != null), pula o lobby!
+  if (mode === "spectate" && spectateRoomId) {
+    return (
+        <><GlobalStyles />
+          <Spectate roomId={spectateRoomId} onBackHome={() => { setSpectateRoomId(null); goMulti(); }} />
+        </>
+    );
+  }
+  if (mode === "practice") {
+    return (
+        <><GlobalStyles />
+          <PracticeMode onBackHome={goMulti} />
+        </>
+    );
+  }
+  if (mode === "daily") {
+    return (
+        <><GlobalStyles />
+          <DailyChallenge onBackHome={goMulti} />
+        </>
+    );
+  }
+
   if (!meuNome) return (
       <><GlobalStyles />
-        <Home onJoin={(n) => {
-          setMeuNome(n);
-          if (!selectedRoomId) setInLobby(true);
-        }} />
+        <Home
+          onJoin={(n) => {
+            setMeuNome(n);
+            if (!selectedRoomId) setInLobby(true);
+          }}
+          onPractice={goPractice}
+          onDaily={goDaily}
+        />
       </>
   );
 
@@ -202,10 +276,12 @@ export default function App() {
       <Lobby
         playerName={meuNome}
         onJoinRoom={(id) => { setSelectedRoomId(id); setInLobby(false); }}
-        onCreateRoom={(n, maxPlayers, isPrivate) => {
+        onCreateRoom={(n, maxPlayers, isPrivate, theme, gameMode) => {
           setSelectedRoomName(n);
           setSelectedRoomMaxPlayers(maxPlayers);
           setSelectedRoomIsPrivate(isPrivate);
+          setSelectedRoomTheme(theme);
+          setSelectedRoomGameMode(gameMode);
           setInLobby(false);
         }}
       /></>
@@ -221,6 +297,8 @@ export default function App() {
       setSelectedRoomName(null);
       setSelectedRoomMaxPlayers(null);
       setSelectedRoomIsPrivate(null);
+      setSelectedRoomTheme(null);
+      setSelectedRoomGameMode(null);
     };
     const handleBackToLobby = () => {
       resetRoomState();
@@ -292,6 +370,8 @@ export default function App() {
             sendReaction={sendReaction}
             expireReaction={expireReaction}
             errorTimestamp={lastErrorAt}
+            sendHint={sendHint}
+            lastHint={lastHint}
         />
         <ConnectionBadge connected={isConnected} />
         </>

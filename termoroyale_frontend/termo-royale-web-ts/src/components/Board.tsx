@@ -40,7 +40,7 @@ export function Board({
     }, [errorTimestamp]);
 
     return (
-        <div className="flex flex-col items-center gap-2 p-3 bg-slate-100/90 backdrop-blur-md rounded-2xl shadow-xl border border-white">
+        <div className="flex flex-col items-center gap-2 p-3 bg-white/85 backdrop-blur-md rounded-2xl shadow-lg border border-slate-200">
             <h3 className="text-slate-700 font-black text-center tracking-widest text-base uppercase">
                 {title}
             </h3>
@@ -73,8 +73,8 @@ export function Board({
                                 duration-500
                                 ${
                                     isGridSolved
-                                        ? "bg-green-100/50 border-2 border-green-400 shadow-lg scale-95 opacity-80"
-                                        : "bg-white/40 border border-white/50"
+                                        ? "bg-emerald-50 border-2 border-emerald-400 shadow-md scale-95 opacity-80"
+                                        : "bg-slate-50/70 border border-slate-200"
                                 }
                             `}
                         >
@@ -172,7 +172,7 @@ export function Board({
 
                             {isGridSolved && (
                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                                    <div className="bg-green-500 text-white font-black text-lg px-4 py-2 rounded-full transform -rotate-12 shadow-xl border-4 border-white">
+                                    <div className="bg-emerald-500 text-white font-black text-lg px-4 py-2 rounded-full transform -rotate-12 shadow-lg border-2 border-white">
                                         RESOLVIDO!
                                     </div>
                                 </div>

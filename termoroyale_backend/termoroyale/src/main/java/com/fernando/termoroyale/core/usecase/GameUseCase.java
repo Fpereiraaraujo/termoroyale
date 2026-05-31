@@ -10,6 +10,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -17,12 +18,17 @@ import java.util.stream.Collectors;
 public class GameUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(GameUseCase.class);
+    /** Intervalo mínimo entre 2 palpites do mesmo jogador na mesma sala (anti-spam). */
+    private static final long MIN_GUESS_INTERVAL_MS = 500L;
 
     private final RoomRepositoryPort roomRepository;
     private final TermoValidator validator;
     private final DictionaryPort dictionaryPort;
     private final SimpMessagingTemplate messagingTemplate;
     private final RoomLockRegistry lockRegistry;
+    private final LobbyBroadcaster lobbyBroadcaster;
+    /** Último timestamp de palpite por (roomId:playerName) — protege thread de spam. */
+    private final ConcurrentHashMap<String, Long> lastGuessAt = new ConcurrentHashMap<>();
 
     public GuessResponse processGuess(String roomId, String playerName, String word) {
         java.util.concurrent.locks.Lock lock = lockRegistry.lockFor(roomId);
@@ -36,6 +42,14 @@ public class GameUseCase {
 
     private GuessResponse doProcessGuess(String roomId, String playerName, String word) {
         log.info(">>> [PROCESS GUESS] Sala: {} | Jogador: {} | Palavra: {}", roomId, playerName, word);
+
+        String rateKey = roomId + ":" + playerName.toLowerCase();
+        long now = System.currentTimeMillis();
+        Long last = lastGuessAt.get(rateKey);
+        if (last != null && now - last < MIN_GUESS_INTERVAL_MS) {
+            throw new RuntimeException("Aguarde um instante antes do próximo palpite.");
+        }
+        lastGuessAt.put(rateKey, now);
 
         Room room = roomRepository.findById(roomId).orElseThrow();
 
@@ -58,10 +72,14 @@ public class GameUseCase {
 
         room.updatePlayerProgress(playerName, word, allResults);
 
+        boolean wasFinished = "FINISHED".equals(room.getStatus());
         checkRoundProgression(room);
 
         roomRepository.save(room);
         messagingTemplate.convertAndSend("/topic/room/" + roomId, room);
+        if (!wasFinished && "FINISHED".equals(room.getStatus())) {
+            lobbyBroadcaster.invalidate();
+        }
 
         Player currentPlayer = room.getPlayers().stream()
                 .filter(p -> p.getName().equalsIgnoreCase(playerName))
@@ -94,8 +112,18 @@ public class GameUseCase {
                     room.setFinished(true);
                 }
 
+                // BLITZ só tem 1 fase: timeout sempre encerra.
+                if ("BLITZ".equals(room.getGameMode()) && !"FINISHED".equals(room.getStatus())) {
+                    log.info(">>> [TIMEOUT BLITZ] Encerrando sala {} por tempo.", roomId);
+                    room.setStatus("FINISHED");
+                    room.setFinished(true);
+                }
+
                 roomRepository.save(room);
                 messagingTemplate.convertAndSend("/topic/room/" + roomId, room);
+                if ("FINISHED".equals(room.getStatus())) {
+                    lobbyBroadcaster.invalidate();
+                }
             }
         } finally {
             lock.unlock();
@@ -109,6 +137,18 @@ public class GameUseCase {
         log.info("--- [CHECK PROGRESS] Sala: {} | Round: {} | Jogadores vivos: {}", room.getId(), room.getCurrentRound(), aliveCount);
 
         if (aliveCount == 0) return;
+
+        // BLITZ: 1 fase, primeiro a resolver vence imediatamente. Sem progressão de fase.
+        if ("BLITZ".equals(room.getGameMode())) {
+            boolean anyWon = room.getPlayers().stream().anyMatch(Player::isWon);
+            boolean allAliveDone = alivePlayers.stream().allMatch(p -> p.isWon() || !p.isAlive());
+            if (anyWon || allAliveDone) {
+                log.info(">>> [BLITZ] Encerrando sala {} (anyWon={}, allDone={})", room.getId(), anyWon, allAliveDone);
+                room.setStatus("FINISHED");
+                room.setFinished(true);
+            }
+            return;
+        }
 
         List<Player> winners = alivePlayers.stream()
                 .filter(Player::isWon)
@@ -174,8 +214,9 @@ public class GameUseCase {
     private void advanceToPhase(Room room, int nextRound, int wordCount) {
         room.setCurrentRound(nextRound);
         room.getTargetWords().clear();
+        String theme = room.getTheme();
         for (int i = 0; i < wordCount; i++) {
-            room.getTargetWords().add(dictionaryPort.getRandomTargetWord());
+            room.getTargetWords().add(dictionaryPort.getRandomTargetWord(theme));
         }
         room.getRoundTargets().put(nextRound, new ArrayList<>(room.getTargetWords()));
         room.setTimeLeft(room.getPhaseDuration());

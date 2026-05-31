@@ -9,6 +9,7 @@ export interface Player {
     guesses: string[];
     results: LetterStatus[][][];
     solvedTimes?: Record<number, number>;
+    bot?: boolean;
 }
 
 export interface Room {
@@ -28,4 +29,7 @@ export interface Room {
     suddenDeath?: boolean;
     graceWindowSeconds?: number;
     rematchRoomId?: string;
+    theme?: string;
+    gameMode?: string;
+    usedHints?: Record<string, number>;
 }

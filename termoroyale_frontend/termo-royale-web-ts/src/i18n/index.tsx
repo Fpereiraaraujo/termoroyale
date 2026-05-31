@@ -9,8 +9,27 @@ const dict = {
         // Home
         "home.title": "Identifique-se",
         "home.subtitle": "Como você será chamado na arena?",
-        "home.placeholder": "Ex: Fernando_Dev",
+        "home.placeholder": "Ex: Milton",
         "home.enter": "Entrar no Lobby",
+        "home.or": "ou jogue sozinho",
+        "home.practice": "Prática",
+        "home.daily": "Desafio Diário",
+
+        // Solo modes
+        "solo.backHome": "Voltar",
+        "solo.practiceBadge": "Modo Prática",
+        "solo.practiceTitle": "Acerte a palavra",
+        "solo.dailyBadge": "Desafio Diário",
+        "solo.dailyTitle": "Palavra do dia",
+        "solo.newWord": "→ Nova palavra",
+        "solo.youWon": "🎯 Você acertou!",
+        "solo.youLost": "Acabaram as tentativas. A palavra era {word}.",
+        "solo.dailyError": "Não foi possível carregar a palavra do dia.",
+
+        // Spectate
+        "spectate.title": "Espectador",
+        "spectate.connecting": "CONECTANDO À SALA...",
+        "spectate.live": "AO VIVO",
 
         // Stats
         "stats.games": "Jogos",
@@ -24,6 +43,11 @@ const dict = {
         "lobby.welcome": "Bem-vindo,",
         "lobby.create": "Criar Sala",
         "lobby.empty": "Nenhuma sala disponível no momento. Crie a sua no botão acima!",
+        "lobby.searchPlaceholder": "Buscar sala por nome ou ID...",
+        "lobby.noResults": "Nenhuma sala encontrada.",
+        "lobby.prev": "Anterior",
+        "lobby.next": "Próxima",
+        "lobby.pageOf": "Página {current} de {total}",
 
         // RoomListItem
         "room.players": "Jogadores",
@@ -39,9 +63,35 @@ const dict = {
         "create.visibility": "Visibilidade",
         "create.public": "Público",
         "create.private": "Privado",
+        "create.theme": "Categoria",
+        "create.mode": "Modo de jogo",
         "create.confirm": "Confirmar Partida",
         "create.defaultName": "Arena Royale",
 
+        "theme.general": "Geral",
+        "theme.animals": "Animais",
+        "theme.food": "Comida",
+        "theme.verbs": "Verbos",
+
+        "mode.royale": "Royale",
+        "mode.royaleHint": "3 fases · 5min",
+        "mode.blitz": "Blitz",
+        "mode.blitzHint": "1 fase · 60s",
+        // Power-ups
+        "powerup.hint": "Dica",
+        "powerup.hintTooltip": "Revela 1 letra do alvo em troca de 2 tentativas",
+        "powerup.hintUsed": "Você já usou sua dica nesta partida",
+        "powerup.hintNoAttempts": "Tentativas insuficientes para usar a dica",
+        "powerup.hintReveal": "Dica revelada",
+        "powerup.hintResult": "{position}ª letra: {letter}",
+
+        // Daily ranking
+        "daily.todayRanking": "Ranking de hoje",
+        "daily.firstSolver": "Primeiro a acertar",
+        "daily.noneYet": "Ninguém acertou ainda hoje. Pode ser você!",
+        "daily.nameNeeded": "Coloque um nome para entrar no ranking diário:",
+        "daily.submitting": "Enviando para o ranking...",
+        "daily.submitted": "Sua pontuação está no ranking",
         // Waiting room
         "waiting.badge": "Aguardando Competidores",
         "waiting.link": "Link da Sala:",
@@ -53,6 +103,11 @@ const dict = {
         "game.syncing": "SINCRONIZANDO...",
         "game.youGotIt": "Você Acertou!",
         "game.waitingQuota": "Aguardando a cota de classificados...",
+        "game.transitionTitle": "Round {n}",
+        "game.transitionR2": "Duo · 2 palavras simultâneas",
+        "game.transitionR3": "Quarteto · Morte súbita",
+        "game.quaseTitle": "QUASE!",
+        "game.quaseSubtitle": "Faltou só 1 letra. Vai na próxima!",
 
         // Scoreboard
         "scoreboard.time": "Tempo",
@@ -128,6 +183,23 @@ const dict = {
         "home.subtitle": "What name will you go by in the arena?",
         "home.placeholder": "E.g. Player_One",
         "home.enter": "Enter Lobby",
+        "home.or": "or play solo",
+        "home.practice": "Practice",
+        "home.daily": "Daily Challenge",
+
+        "solo.backHome": "Back",
+        "solo.practiceBadge": "Practice Mode",
+        "solo.practiceTitle": "Guess the word",
+        "solo.dailyBadge": "Daily Challenge",
+        "solo.dailyTitle": "Word of the day",
+        "solo.newWord": "→ New word",
+        "solo.youWon": "🎯 You got it!",
+        "solo.youLost": "Out of attempts. The word was {word}.",
+        "solo.dailyError": "Couldn't load today's word.",
+
+        "spectate.title": "Spectator",
+        "spectate.connecting": "CONNECTING TO ROOM...",
+        "spectate.live": "LIVE",
 
         "stats.games": "Games",
         "stats.wins": "Wins",
@@ -139,6 +211,11 @@ const dict = {
         "lobby.welcome": "Welcome,",
         "lobby.create": "Create Room",
         "lobby.empty": "No rooms available right now. Create yours above!",
+        "lobby.searchPlaceholder": "Search room by name or ID...",
+        "lobby.noResults": "No rooms found.",
+        "lobby.prev": "Prev",
+        "lobby.next": "Next",
+        "lobby.pageOf": "Page {current} of {total}",
 
         "room.players": "Players",
         "room.waiting": "Waiting",
@@ -152,9 +229,35 @@ const dict = {
         "create.visibility": "Visibility",
         "create.public": "Public",
         "create.private": "Private",
+        "create.theme": "Category",
+        "create.mode": "Game mode",
         "create.confirm": "Confirm Match",
         "create.defaultName": "Royale Arena",
 
+        "theme.general": "General",
+        "theme.animals": "Animals",
+        "theme.food": "Food",
+        "theme.verbs": "Verbs",
+
+        "mode.royale": "Royale",
+        "mode.royaleHint": "3 rounds · 5min",
+        "mode.blitz": "Blitz",
+        "mode.blitzHint": "1 round · 60s",
+        // Power-ups
+        "powerup.hint": "Hint",
+        "powerup.hintTooltip": "Reveal 1 letter of the target for 2 attempts",
+        "powerup.hintUsed": "You already used your hint this match",
+        "powerup.hintNoAttempts": "Not enough attempts to use the hint",
+        "powerup.hintReveal": "Hint revealed",
+        "powerup.hintResult": "Letter #{position}: {letter}",
+
+        // Daily ranking
+        "daily.todayRanking": "Today's ranking",
+        "daily.firstSolver": "First solver",
+        "daily.noneYet": "Nobody solved it yet today. Could be you!",
+        "daily.nameNeeded": "Pick a name to join the daily ranking:",
+        "daily.submitting": "Submitting your score...",
+        "daily.submitted": "Your score is on the ranking",
         "waiting.badge": "Waiting for Players",
         "waiting.link": "Room link:",
         "waiting.starts": "Match starts in",
@@ -164,6 +267,11 @@ const dict = {
         "game.syncing": "SYNCING...",
         "game.youGotIt": "You got it!",
         "game.waitingQuota": "Waiting for qualifier quota...",
+        "game.transitionTitle": "Round {n}",
+        "game.transitionR2": "Duo · 2 words at once",
+        "game.transitionR3": "Quartet · Sudden death",
+        "game.quaseTitle": "SO CLOSE!",
+        "game.quaseSubtitle": "Just 1 letter off. Get it next time!",
 
         "scoreboard.time": "Time",
         "scoreboard.ended": "Ended",
@@ -283,23 +391,37 @@ interface SwitcherProps {
 
 export function LanguageSwitcher({ className = "" }: SwitcherProps) {
     const { lang, setLang } = useI18n();
-    const base = "w-9 h-9 rounded-full border-2 text-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-md";
-    const active = "border-yellow-400 ring-2 ring-yellow-400/60";
-    const inactive = "border-slate-600 opacity-60 hover:opacity-100";
+    const base = "w-10 h-10 rounded-full overflow-hidden transition-all duration-200 cursor-pointer select-none shadow-md";
+    const active = "scale-110 ring-2 ring-yellow-400 ring-offset-2 ring-offset-transparent opacity-100";
+    const inactive = "grayscale opacity-60 hover:grayscale-0 hover:opacity-100 hover:scale-110";
     return (
-        <div className={`flex items-center gap-2 ${className}`}>
+        <div className={`flex items-center gap-3 ${className}`}>
             <button
                 onClick={() => setLang("pt")}
-                className={`${base} bg-slate-800 ${lang === "pt" ? active : inactive}`}
+                className={`${base} ${lang === "pt" ? active : inactive}`}
                 title="Português"
                 aria-label="Português"
-            >🇧🇷</button>
+            >
+                <img
+                    src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f1e7-1f1f7.png"
+                    alt=""
+                    className="w-full h-full object-cover pointer-events-none"
+                    draggable={false}
+                />
+            </button>
             <button
                 onClick={() => setLang("en")}
-                className={`${base} bg-slate-800 ${lang === "en" ? active : inactive}`}
+                className={`${base} ${lang === "en" ? active : inactive}`}
                 title="English"
                 aria-label="English"
-            >🇺🇸</button>
+            >
+                <img
+                    src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f1fa-1f1f8.png"
+                    alt=""
+                    className="w-full h-full object-cover pointer-events-none"
+                    draggable={false}
+                />
+            </button>
         </div>
     );
 }

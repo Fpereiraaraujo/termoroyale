@@ -5,8 +5,8 @@ body {
   font-family: 'Fredoka', sans-serif;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Impede a tela de rolar, igual num jogo de verdade */
-  background-color: #a1d6e2; /* Cor de fallback (um azul céu) */
+  overflow: hidden;
+  background-color: #a1d6e2;
 }
 
 /* Utilitários personalizados para as cores exatas do Termo */

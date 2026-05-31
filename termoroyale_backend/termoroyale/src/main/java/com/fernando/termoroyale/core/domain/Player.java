@@ -26,6 +26,9 @@ public class Player {
     // Map round -> seconds elapsed when player solved that round
     private Map<Integer, Integer> solvedTimes = new HashMap<>();
 
+    /** Indica jogadores controlados pelo {@code BotService} (preenchimento). */
+    private boolean bot = false;
+
     // Construtor vazio para o Jackson/Redis
     public Player() {
         this.isAlive = true;

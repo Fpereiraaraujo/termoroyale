@@ -12,8 +12,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
@@ -22,15 +24,33 @@ import java.util.concurrent.locks.Lock;
 public class MatchmakingUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(MatchmakingUseCase.class);
+    /** Limite de salas ativas simultâneas (proteg endo t2.micro contra abuso/OOM). */
+    private static final long MAX_ACTIVE_ROOMS = 100L;
 
     private final RoomRepositoryPort roomRepository;
     private final DictionaryPort dictionaryPort;
     private final SimpMessagingTemplate messagingTemplate;
     private final GameUseCase gameUseCase;
     private final RoomLockRegistry lockRegistry;
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
+    private final LobbyBroadcaster lobbyBroadcaster;
+    private final ProfanityFilter profanityFilter;
+    private final BotService botService;
+    /** Pool compartilhado dimensionado para o t2.micro (1 vCPU). */
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2, r -> {
+        Thread t = new Thread(r, "room-timer");
+        t.setDaemon(true);
+        return t;
+    });
+    /** Futures por sala para permitir cancelamento limpo (sem throw). */
+    private final ConcurrentHashMap<String, ScheduledFuture<?>> roomTimers = new ConcurrentHashMap<>();
 
-    public Room joinOrCreateRoom(String playerName, String playerId, String requestedRoomId, String requestedRoomName, Integer requestedMaxPlayers, Boolean isPrivate) {
+    public Room joinOrCreateRoom(String playerName, String playerId, String requestedRoomId, String requestedRoomName, Integer requestedMaxPlayers, Boolean isPrivate, String theme, String gameMode) {
+        if (profanityFilter.contains(playerName)) {
+            throw new RuntimeException("Nome de jogador inadequado. Escolha outro.");
+        }
+        if (requestedRoomName != null && profanityFilter.contains(requestedRoomName)) {
+            throw new RuntimeException("Nome de sala inadequado. Escolha outro.");
+        }
         Room room;
         boolean isNewRoom = false;
 
@@ -38,10 +58,18 @@ public class MatchmakingUseCase {
             room = roomRepository.findById(requestedRoomId)
                     .orElseThrow(() -> new RuntimeException("Sala não encontrada: " + requestedRoomId));
         } else if (requestedRoomName != null && !requestedRoomName.trim().isEmpty()) {
-            room = createNewRoom(null, requestedRoomName, requestedMaxPlayers, isPrivate == null ? false : isPrivate);
+            if (roomRepository.countActive() >= MAX_ACTIVE_ROOMS) {
+                throw new RuntimeException("Limite de salas ativas atingido. Tente novamente mais tarde.");
+            }
+            room = createNewRoom(null, requestedRoomName, requestedMaxPlayers, isPrivate == null ? false : isPrivate, theme, gameMode);
             isNewRoom = true;
         } else {
-            room = roomRepository.findAvailableRoom().orElseGet(() -> createNewRoom(null, "Arena Pública", requestedMaxPlayers, isPrivate == null ? false : isPrivate));
+            room = roomRepository.findAvailableRoom().orElseGet(() -> {
+                if (roomRepository.countActive() >= MAX_ACTIVE_ROOMS) {
+                    throw new RuntimeException("Limite de salas ativas atingido. Tente novamente mais tarde.");
+                }
+                return createNewRoom(null, "Arena Pública", requestedMaxPlayers, isPrivate == null ? false : isPrivate, theme, gameMode);
+            });
             if (room.getPlayers().isEmpty()) {
                 isNewRoom = true;
             }
@@ -79,6 +107,7 @@ public class MatchmakingUseCase {
             }
             room.setTimeLeft(room.getPhaseDuration());
             room.setPhaseStartTimestamp(System.currentTimeMillis() / 1000L);
+            botService.startBotsForRoom(room.getId());
         }
 
         Room savedRoom = roomRepository.save(room);
@@ -88,28 +117,37 @@ public class MatchmakingUseCase {
         if (isNewRoom) {
             startRoomTimer(savedRoom.getId());
         }
+        lobbyBroadcaster.invalidate();
 
         return savedRoom;
     }
 
     private void startRoomTimer(String roomId) {
-        scheduler.scheduleAtFixedRate(() -> {
-            Room room = null;
+        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
             Lock lock = lockRegistry.lockFor(roomId);
             lock.lock();
             try {
-                 room = roomRepository.findById(roomId).orElse(null);
+                Room room = roomRepository.findById(roomId).orElse(null);
                 if (room == null || room.isFinished()) {
+                    cancelRoomTimer(roomId);
+                    botService.stopBotsForRoom(roomId);
                     lockRegistry.release(roomId);
-                    throw new RuntimeException("Encerrando timer...");
+                    return;
                 }
 
                 int newTime = room.getTimeLeft() - 1;
                 room.setTimeLeft(newTime);
+                boolean lobbyChanged = false;
+
+                // Preenche com bots faltando 10s para a sala em WAITING começar.
+                if ("WAITING".equals(room.getStatus()) && newTime == 10) {
+                    if (botService.fillRoomWithBots(room)) {
+                        lobbyChanged = true;
+                    }
+                }
 
                 if (newTime <= 0) {
                     if ("WAITING".equals(room.getStatus())) {
-                        // waiting phase ended -> start playing
                         if (room.getInitialPlayersCount() == 0) {
                             room.setInitialPlayersCount(room.getPlayers().size());
                         }
@@ -117,29 +155,41 @@ public class MatchmakingUseCase {
                         room.setStarted(true);
                         room.setTimeLeft(room.getPhaseDuration());
                         room.setPhaseStartTimestamp(System.currentTimeMillis() / 1000L);
-                        roomRepository.save(room);
-                        messagingTemplate.convertAndSend("/topic/room/" + roomId, room);
+                        lobbyChanged = true;
+                        botService.startBotsForRoom(roomId);
                     } else if ("PLAYING".equals(room.getStatus())) {
-                        // phase expired -> delegate handling to GameUseCase
                         try {
                             gameUseCase.onPhaseTimeout(roomId);
                         } catch (Exception ex) {
                             log.error("Erro ao processar fim de fase: {}", ex.getMessage());
                         }
-                        // reload room for latest state
                         room = roomRepository.findById(roomId).orElse(room);
+                        if (room != null && room.isFinished()) {
+                            lobbyChanged = true;
+                            botService.stopBotsForRoom(roomId);
+                        }
                     }
                 }
 
-                roomRepository.save(room);
-                messagingTemplate.convertAndSend("/topic/room/" + roomId, room);
-
+                if (room != null) {
+                    roomRepository.save(room);
+                    messagingTemplate.convertAndSend("/topic/room/" + roomId, room);
+                }
+                if (lobbyChanged) lobbyBroadcaster.invalidate();
             } catch (Exception e) {
-                throw new RuntimeException("Timer parado", e);
+                log.error("Erro no timer da sala {}: {}", roomId, e.getMessage());
             } finally {
                 lock.unlock();
             }
         }, 1, 1, TimeUnit.SECONDS);
+
+        ScheduledFuture<?> previous = roomTimers.put(roomId, future);
+        if (previous != null) previous.cancel(false);
+    }
+
+    private void cancelRoomTimer(String roomId) {
+        ScheduledFuture<?> f = roomTimers.remove(roomId);
+        if (f != null) f.cancel(false);
     }
 
     public Room getRoomById(String roomId) {
@@ -172,7 +222,8 @@ public class MatchmakingUseCase {
             if (!rematchExists) {
                 String baseName = original.getName() != null ? original.getName() : "Arena";
                 String rematchName = baseName.startsWith("Revanche · ") ? baseName : "Revanche · " + baseName;
-                Room rematch = createNewRoom(null, rematchName, original.getMaxPlayers(), false);
+                Room rematch = createNewRoom(null, rematchName, original.getMaxPlayers(), false,
+                        original.getTheme(), original.getGameMode());
                 Room savedRematch = roomRepository.save(rematch);
                 rematchRoomId = savedRematch.getId();
                 original.setRematchRoomId(rematchRoomId);
@@ -185,10 +236,13 @@ public class MatchmakingUseCase {
         } finally {
             lock.unlock();
         }
-        return joinOrCreateRoom(playerName, playerId, rematchRoomId, null, null, null);
+        return joinOrCreateRoom(playerName, playerId, rematchRoomId, null, null, null, null, null);
     }
 
-    private Room createNewRoom(String customId, String roomName, Integer maxPlayers, boolean isPrivate) {
+    private static final java.util.Set<String> VALID_THEMES = java.util.Set.of("GERAL", "ANIMAIS", "COMIDA", "VERBOS");
+    private static final java.util.Set<String> VALID_MODES = java.util.Set.of("ROYALE", "BLITZ");
+
+    private Room createNewRoom(String customId, String roomName, Integer maxPlayers, boolean isPrivate, String theme, String gameMode) {
         Room newRoom = new Room();
         if (customId != null) {
             newRoom.setId(customId.toUpperCase());
@@ -200,11 +254,22 @@ public class MatchmakingUseCase {
             newRoom.setName("Arena Royale #" + newRoom.getId());
         }
 
+        String normalizedTheme = (theme == null) ? "GERAL" : theme.toUpperCase();
+        if (!VALID_THEMES.contains(normalizedTheme)) normalizedTheme = "GERAL";
+        newRoom.setTheme(normalizedTheme);
+
+        String normalizedMode = (gameMode == null) ? "ROYALE" : gameMode.toUpperCase();
+        if (!VALID_MODES.contains(normalizedMode)) normalizedMode = "ROYALE";
+        newRoom.setGameMode(normalizedMode);
+        if ("BLITZ".equals(normalizedMode)) {
+            newRoom.setPhaseDuration(60);
+        }
+
         newRoom.setStatus("WAITING");
         // Lobby waiting time must remain 30 seconds
         newRoom.setTimeLeft(30);
         if (maxPlayers != null && maxPlayers > 0) newRoom.setMaxPlayers(maxPlayers);
-        newRoom.getTargetWords().add(dictionaryPort.getRandomTargetWord());
+        newRoom.getTargetWords().add(dictionaryPort.getRandomTargetWord(normalizedTheme));
         newRoom.getRoundTargets().put(1, new java.util.ArrayList<>(newRoom.getTargetWords()));
 
         // mark createdAt

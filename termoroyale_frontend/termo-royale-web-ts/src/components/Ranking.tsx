@@ -64,19 +64,19 @@ export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed
     }, [players]);
 
     return (
-        <div className="w-80 bg-slate-900/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex flex-col text-white">
+        <div className="w-80 bg-slate-950/90 backdrop-blur-md border-l border-slate-800 shadow-2xl flex flex-col text-white">
             <style>{`
                 @keyframes wonFlash {
-                    0%   { background-color: rgba(34, 197, 94, 0.55); box-shadow: 0 0 0 0 rgba(34,197,94,0.7); }
-                    60%  { background-color: rgba(34, 197, 94, 0.25); box-shadow: 0 0 0 14px rgba(34,197,94,0); }
-                    100% { background-color: transparent; box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+                    0%   { background-color: rgba(16, 185, 129, 0.55); box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+                    60%  { background-color: rgba(16, 185, 129, 0.25); box-shadow: 0 0 0 14px rgba(16,185,129,0); }
+                    100% { background-color: transparent; box-shadow: 0 0 0 0 rgba(16,185,129,0); }
                 }
                 .won-flash { animation: wonFlash 1.8s ease-out; }
             `}</style>
 
-            <div className="p-6 border-b border-white/10 bg-slate-800/50">
+            <div className="p-6 border-b border-slate-800 bg-slate-900/60">
                 <h3 className="text-2xl font-black tracking-widest uppercase flex items-center gap-3">
-                    <span className="w-2 h-8 bg-sky-500 rounded-full"></span>
+                    <span className="w-2 h-8 bg-amber-400 rounded-full"></span>
                     {t("ranking.title")}
                 </h3>
             </div>
@@ -84,7 +84,7 @@ export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
                 {sortedPlayers.map((player, index) => {
                     const isMe = player.name.toLowerCase() === currentPlayerName.toLowerCase();
-                    const rankClass = index === 0 ? "text-yellow-400" : index === 1 ? "text-slate-300" : index === 2 ? "text-amber-600" : "text-slate-500";
+                    const rankClass = index === 0 ? "text-amber-400" : index === 1 ? "text-slate-300" : index === 2 ? "text-amber-600" : "text-slate-500";
                     const solveTime = player.solvedTimes?.[currentRound];
                     const isFlashing = flashing.has(player.id);
 
@@ -100,7 +100,7 @@ export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed
                         <div
                             key={player.id}
                             className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                                isMe ? 'bg-sky-500/20 border-sky-500/50' : 'bg-slate-800/50 border-white/5'
+                                isMe ? 'bg-amber-400/15 border-amber-400/50' : 'bg-slate-800/50 border-slate-800'
                             } ${isFlashing ? 'won-flash' : ''}`}
                         >
                             <div className="flex items-center gap-3">
@@ -115,13 +115,14 @@ export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed
                                 })()}
                                 <div className="flex flex-col">
                                     <span className="font-bold text-base truncate w-24 uppercase">
+                                        {player.bot && <span className="text-[10px] mr-1 px-1 rounded bg-slate-700 text-slate-300 align-middle">🤖</span>}
                                         {player.name}
                                     </span>
                                     <div className="flex items-center gap-1.5">
-                                        {isMe && <span className="text-[10px] text-sky-400 font-black tracking-widest uppercase">{t("ranking.you")}</span>}
+                                        {isMe && <span className="text-[10px] text-amber-400 font-black tracking-widest uppercase">{t("ranking.you")}</span>}
                                         {liveSeconds !== undefined && (
                                             <span className={`text-[10px] font-black tracking-widest uppercase ${
-                                                player.won ? 'text-green-400' : 'text-slate-400'
+                                                player.won ? 'text-emerald-400' : 'text-slate-400'
                                             }`}>
                                                 {liveSeconds}s
                                             </span>
@@ -132,13 +133,13 @@ export function Ranking({ players, currentPlayerName, currentRound, phaseElapsed
 
                             <div>
                                 {player.won ? (
-                                    <span className="bg-green-500/20 text-green-400 font-black px-3 py-1 rounded-lg text-xs uppercase tracking-widest border border-green-500/30">
+                                    <span className="bg-emerald-500/15 text-emerald-300 font-black px-3 py-1 rounded-lg text-xs uppercase tracking-widest border border-emerald-500/40">
                                         {solveTime ? `${solveTime}s` : t("ranking.won")}
                                     </span>
                                 ) : !player.isAlive ? (
-                                    <span className="bg-red-500/20 text-red-400 font-black px-3 py-1 rounded-lg text-xs uppercase tracking-widest border border-red-500/30">{t("ranking.out")}</span>
+                                    <span className="bg-rose-500/15 text-rose-300 font-black px-3 py-1 rounded-lg text-xs uppercase tracking-widest border border-rose-500/40">{t("ranking.out")}</span>
                                 ) : (
-                                    <span className="bg-slate-700 text-slate-300 font-black px-3 py-1 rounded-lg text-xs uppercase tracking-widest border border-slate-600">
+                                    <span className="bg-slate-800 text-slate-300 font-black px-3 py-1 rounded-lg text-xs uppercase tracking-widest border border-slate-700">
                                         {t("ranking.playing")}
                                     </span>
                                 )}

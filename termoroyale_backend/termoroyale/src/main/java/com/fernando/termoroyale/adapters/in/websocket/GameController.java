@@ -2,6 +2,7 @@ package com.fernando.termoroyale.adapters.in.websocket;
 
 import com.fernando.termoroyale.core.domain.Room;
 import com.fernando.termoroyale.core.usecase.GameUseCase;
+import com.fernando.termoroyale.core.usecase.LobbyBroadcaster;
 import com.fernando.termoroyale.core.usecase.MatchmakingUseCase;
 import com.fernando.termoroyale.core.exception.InvalidWordException;
 import lombok.RequiredArgsConstructor;
@@ -22,20 +23,14 @@ public class GameController {
 
     private final MatchmakingUseCase matchmakingUseCase;
     private final GameUseCase gameUseCase;
+    private final com.fernando.termoroyale.core.usecase.PowerUpUseCase powerUpUseCase;
     private final SimpMessagingTemplate messagingTemplate;
+    private final LobbyBroadcaster lobbyBroadcaster;
 
     @MessageMapping("/lobby/rooms")
     @SendTo("/topic/lobby")
-    public List<RoomListResponse> getActiveRooms() {
-        return matchmakingUseCase.getAllRooms().stream()
-                .map(room -> new RoomListResponse(
-                        room.getId(),
-                        room.getName(), // <-- Adicionamos o envio do Nome!
-                        room.getPlayers().size(),
-                room.getMaxPlayers(),
-                        room.getStatus()
-                ))
-                .toList();
+    public List<LobbyBroadcaster.RoomSummary> getActiveRooms() {
+        return lobbyBroadcaster.snapshot();
     }
 
 
@@ -48,7 +43,9 @@ public class GameController {
                 request.roomId(),
                 request.roomName(),
                 request.maxPlayers(),
-                request.isPrivate()
+                request.isPrivate(),
+                request.theme(),
+                request.gameMode()
         );
 
         messagingTemplate.convertAndSendToUser(request.playerName(), "/queue/room", room);
@@ -111,10 +108,27 @@ public class GameController {
         );
     }
 
+    @MessageMapping("/hint")
+    public void handleHint(@Payload HintRequest request) {
+        try {
+            var response = powerUpUseCase.useHint(request.roomId(), request.playerName());
+            messagingTemplate.convertAndSendToUser(
+                    request.playerName(), "/queue/hint", response);
+        } catch (Exception e) {
+            log.warn("Hint negada sala={} player={}: {}", request.roomId(), request.playerName(), e.getMessage());
+            messagingTemplate.convertAndSendToUser(
+                    request.playerName(),
+                    "/queue/errors",
+                    Map.of("message", e.getMessage() != null ? e.getMessage() : "Dica indisponível", "type", "HINT_DENIED")
+            );
+        }
+    }
+
     // Records
     public record GuessRequest(String roomId, String playerName, String word) {}
     public record RoomListResponse(String id, String name, int playersCount, int maxPlayers, String status) {}
-    public record JoinRequest(String playerName, String playerId, String roomId, String roomName, Integer maxPlayers, Boolean isPrivate) {}
+    public record JoinRequest(String playerName, String playerId, String roomId, String roomName, Integer maxPlayers, Boolean isPrivate, String theme, String gameMode) {}
     public record RematchRequest(String originalRoomId, String playerName, String playerId) {}
     public record ReactionRequest(String roomId, String playerName, String emoji) {}
+    public record HintRequest(String roomId, String playerName) {}
 }

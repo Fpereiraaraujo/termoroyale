@@ -37,18 +37,18 @@ export function Scoreboard({
 
     return (
         <>
-        <div className="w-full bg-slate-900 border-b-4 border-yellow-400 shadow-2xl text-white px-4 py-2 grid grid-cols-3 items-center gap-4">
+        <div className="w-full bg-slate-950 border-b border-amber-400/40 shadow-xl text-white px-4 py-2 grid grid-cols-3 items-center gap-4">
             {/* Logo + vidas */}
             <div className="flex items-center gap-3 justify-self-start">
-                <div className="bg-slate-900 px-3 py-1 rounded-md border-2 border-slate-700 shadow-inner">
+                <div className="bg-slate-900 px-3 py-1 rounded-md border border-slate-700 shadow-inner">
                     <span className="font-black text-base text-white tracking-widest">TERMO </span>
-                    <span className="font-black text-base text-yellow-400 tracking-widest">ROYALE</span>
+                    <span className="font-black text-base text-amber-400 tracking-widest">ROYALE</span>
                 </div>
                 <div className="flex items-center gap-1">
                     {Array.from({ length: maxLives }).map((_, i) => (
                         <span
                             key={i}
-                            className={`text-base ${i < lives ? "text-red-500" : "text-slate-700"}`}
+                            className={`text-base ${i < lives ? "text-rose-500" : "text-slate-700"}`}
                         >
                             ❤
                         </span>
@@ -63,18 +63,18 @@ export function Scoreboard({
                     const isCurrent = r === currentRound && !isFinished;
                     return (
                         <div key={r} className="flex items-center gap-1">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border-2 transition-all ${
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs border transition-all ${
                                 isCurrent
-                                    ? "bg-yellow-400 text-slate-900 border-yellow-200 animate-pulse shadow-lg shadow-yellow-400/50"
+                                    ? "bg-amber-400 text-slate-900 border-amber-300 animate-pulse shadow-md shadow-amber-400/30"
                                     : isPast
-                                        ? "bg-green-500 text-white border-green-300"
+                                        ? "bg-emerald-500 text-white border-emerald-400"
                                         : "bg-slate-800 text-slate-500 border-slate-700"
                             }`}>
                                 {isPast ? "✓" : `R${r}`}
                             </div>
                             {r < 3 && (
                                 <div className={`w-4 h-0.5 ${
-                                    r < currentRound ? "bg-green-500" : "bg-slate-700"
+                                    r < currentRound ? "bg-emerald-500" : "bg-slate-700"
                                 }`} />
                             )}
                         </div>
@@ -86,19 +86,19 @@ export function Scoreboard({
             <div className="flex items-center gap-2 justify-self-end">
                 <button
                     onClick={() => setRulesOpen(true)}
-                    className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border-2 border-slate-600 text-yellow-400 font-black text-base shadow-inner"
+                    className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 font-black text-base shadow-inner"
                     title={t("scoreboard.howToPlay")}
                 >?</button>
                 <button
                     onClick={() => setMuted(sound.toggleMute())}
-                    className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border-2 border-slate-600 text-base shadow-inner"
+                    className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-base shadow-inner"
                     title={muted ? t("scoreboard.soundOff") : t("scoreboard.soundOn")}
                 >{muted ? "🔇" : "🔊"}</button>
-                <div className="flex flex-col items-center bg-black px-4 py-1 rounded-lg border-2 border-yellow-400 shadow-inner min-w-[110px]">
-                    <span className="text-[9px] font-bold text-yellow-400/70 tracking-widest uppercase leading-none">
+                <div className="flex flex-col items-center bg-slate-900 px-4 py-1 rounded-lg border border-amber-400/60 shadow-inner min-w-[110px]">
+                    <span className="text-[9px] font-bold text-amber-400/70 tracking-widest uppercase leading-none">
                         {isFinished ? t("scoreboard.ended") : t("scoreboard.time")}
                     </span>
-                    <span className="text-3xl font-mono font-black text-yellow-400 tracking-wider leading-tight" style={{ textShadow: "0 0 8px rgba(250, 204, 21, 0.6)" }}>
+                    <span className="text-3xl font-mono font-black text-amber-400 tracking-wider leading-tight">
                         {timeRemaining}
                     </span>
                 </div>

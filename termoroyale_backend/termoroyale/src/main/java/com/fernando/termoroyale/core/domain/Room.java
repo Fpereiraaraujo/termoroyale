@@ -33,6 +33,10 @@ public class Room {
     private boolean started = false;
     private boolean finished = false;
     private List<String> targetWords = new ArrayList<>();
+    /** Categoria temática da sala. Ex.: GERAL, ANIMAIS, COMIDA, VERBOS. */
+    private String theme = "GERAL";
+    /** Modo de jogo. ROYALE = 3 fases (padrão); BLITZ = 1 fase, 60s, ranking por tempo. */
+    private String gameMode = "ROYALE";
     private String status = "WAITING";
     private int timeLeft = 30;
     private int phaseDuration = 300;
@@ -43,6 +47,8 @@ public class Room {
     private Map<Integer, Map<String, Integer>> roundTimes = new HashMap<>();
     // Histórico de palavras-alvo por fase (para replay na tela de vitória)
     private Map<Integer, List<String>> roundTargets = new HashMap<>();
+    /** Power-up: contagem de dicas usadas por jogador (chave em lowercase). */
+    private Map<String, Integer> usedHints = new HashMap<>();
     // Id da sala de revanche criada a partir desta. Compartilhado entre todos
     // os jogadores da sala original para que cliquem em Revanche e caiam
     // na mesma sala nova.

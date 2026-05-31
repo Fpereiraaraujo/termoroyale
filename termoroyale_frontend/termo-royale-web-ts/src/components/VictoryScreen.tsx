@@ -12,6 +12,7 @@ import { useVictoryData } from "./victory/useVictoryData";
 import { playVictorySound } from "./victory/sound";
 import { loadHallOfFame, pushHallOfFame, type HallEntry } from "./victory/hallOfFameStorage";
 import { useI18n } from "../i18n";
+import { buildWordleShare } from "../utils/wordleShare";
 
 interface VictoryScreenProps {
     room: Room;
@@ -23,7 +24,7 @@ interface VictoryScreenProps {
 export function VictoryScreen({ room, meuNome, onBackToLobby, onRematch }: VictoryScreenProps) {
     const { winner, podium, winnerStats, phasesPlayed } = useVictoryData(room);
     const euVenci = winner?.name.toLowerCase() === meuNome.toLowerCase();
-    const { t } = useI18n();
+    const { t, lang } = useI18n();
 
     // Som — uma vez
     const soundPlayedRef = useRef(false);
@@ -49,8 +50,7 @@ export function VictoryScreen({ room, meuNome, onBackToLobby, onRematch }: Victo
         }));
     }, [winner, winnerStats, room.id, room.name]);
 
-    const shareUrl = `${window.location.origin}/room/${room.id}`;
-    const shareText = t("victory.shareText", { name: winner?.name ?? t("victory.shareTextFallback"), url: shareUrl });
+    const shareText = buildWordleShare(room, winner, winnerStats?.totalTime ?? 0, lang);
 
     return (
         <>
@@ -61,7 +61,7 @@ export function VictoryScreen({ room, meuNome, onBackToLobby, onRematch }: Victo
             >
                 <Confetti />
 
-                <div className="relative w-full max-w-2xl bg-slate-900 rounded-3xl border-4 border-yellow-400 shadow-[0_0_60px_rgba(250,204,21,0.35)] p-5 md:p-6 flex flex-col items-center text-slate-200">
+                <div className="relative w-full max-w-2xl bg-slate-900 rounded-3xl border-2 border-amber-400/70 shadow-2xl p-5 md:p-6 flex flex-col items-center text-slate-200">
                     <WinnerHeader
                         winnerName={winner?.name}
                         euVenci={euVenci}
